@@ -1,4 +1,4 @@
-./datasets/*
+datasets
 
 ########### GENERAL PYTHON FILES TO IGNORE ###########
 # Byte-compiled / optimized / DLL files
