@@ -7,7 +7,7 @@ Created on Sat Feb 29 16:03:07 2020
 import cv2
 import detectors as dts
 from detectors.gt_modifications import obtain_gt
-from metrics.mAP import getPRCurve
+from metrics.mAP import getAvgPrecision
 SOURCE = "../datasets/AICity_data/train/S03/c010/vdo.avi"
 
 detectors = {"gt_noise":dts.gt_predict,
@@ -36,7 +36,11 @@ def main():
             #Obtain GT
             
             #Compute the metrics
-            getPRCurve(rects, gt_frames[str(i)])
+            if len(rects[0]) == 4: # No confidence provided
+                avg_precision_frame, iou_frame = getAvgPrecision(rects, gt_frames[str(i)])
+            if len(rects[0]) == 5: # Provided confidence
+                avg_precision_frame, iou_frame = getAvgPrecision(rects, gt_frames[str(i)], True, 1)
+            
             #Print Results
             for rect in gt_frames[str(i)]:
                 pt1 = (int(rect[0]), int(rect[1]))

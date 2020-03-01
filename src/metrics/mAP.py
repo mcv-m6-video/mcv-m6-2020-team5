@@ -5,28 +5,79 @@ Created on Sat Feb 29 19:25:19 2020
 @author: hamdd
 """
 import numpy as np
+from copy import deepcopy
+import tensorflow as tf
+from tensorflow.compat.v1.metrics import average_precision_at_k
 
-# main pipeline
-def getPRCurve(pred_bboxes, gt_bboxes, conf=None, N=10):
+
+# get Average Precision and Average IoU for each frame
+def getAvgPrecision(pred_bboxes, gt_bboxes, confidence=False, N=10, IoU_threshold=0.5):
+    """
+    Input: 
+        pred_bboxes: predicted bounding boxes
+        gt_bboxes: ground truth bounding boxes
+        confidence: True if confidence is provided in the predicted boxes
+        N: number of random shuffle if there is no confidence provided
+        IoU_threshold: value to consider the IoU a correct bounding box
+    
+    Output:
+        avg_precision: mean Average Precision of the given predicted boxes
+        avg_iou: average IoU of the given predicted boxes
+    
+    """
     rrank = np.arange(len(pred_bboxes))
+    prediction = []
+    iou = []
     for x in range(N):
-        np.random.shuffle(rrank)
+        if confidence:
+            sorted(pred_bboxes, key=lambda pred_bboxes: pred_bboxes[4])
+        else:
+            np.random.shuffle(rrank)
+
+        tgt_bboxes = deepcopy(gt_bboxes)
         corrects = []
         for idx in rrank:
-            pdbbox = pred_bboxes[idx]
-            res = [IoU(pdbbox, gt_bboxes[i]) for i in range(len(gt_bboxes))]
-            idx_max = np.where(res==np.max(res))[0][0]
-            conf_max = res[idx_max]
-        # for idx_gt in range(gt_boxes):
-        #     iou = IoU(pdbbox,gt_boxes[idx_gt])
-        #     if iou > 0.5:
-        #         corrects.append("True")
+            if len(tgt_bboxes) is not 0:
+                pdbbox = pred_bboxes[idx][0:4]
+                res = [IoU(pdbbox, tgt_bboxes[i]) for i in range(len(tgt_bboxes))]
+                idx_max = np.where(res==np.max(res))[0][0]
+                conf_max = res[idx_max]
+                iou.append(conf_max)
+                if conf_max > IoU_threshold:
+                    corrects.append(1)
+                    tgt_bboxes.remove(tgt_bboxes[idx_max])
+                else:
+                    corrects.append(0)
+            else:
+                iou.append(0)
+                corrects.append(0)
                 
-        
+        while len(corrects) < len(gt_bboxes):
+            corrects.append(0)
+        prediction.append(corrects)
+    
+    avg_precision = mAP(prediction, len(gt_bboxes))
+    avg_iou = sum(iou) / len(iou)
 
-#input parameters tiene que ser  bboxes y gtbboxes
-def mAP(pred_bboxes, gt_bboxes, conf=None, N=10):
-    pass
+    return avg_precision, avg_iou
+
+#Compute mAP given a prediction vector and the length of ground truth boxes 
+def mAP(prediction, len_gt_bboxes):
+    """
+        Calculate mAP from a given prediction
+        (Not completed yet)
+    """
+    labels = tf.ones(len_gt_bboxes, dtype=tf.dtypes.int64)
+    ap_sum = tf.zeros(1, dtype=tf.dtypes.int64)
+    for pred in range(len(prediction)):
+        predictions = tf.convert_to_tensor(prediction[pred], dtype=tf.dtypes.int64, dtype_hint=None)
+        ap = average_precision_at_k(labels, predictions, len_gt_bboxes)
+        ap_sum = tf.math.add(ap_sum, ap)
+    map = ap_sum / len(prediction)
+    # print(predictions)
+    return map
+
+
 def IoU(boxA, boxB):
 	# determine the (x, y)-coordinates of the intersection rectangle
 	xA = max(boxA[0], boxB[0])
@@ -45,7 +96,3 @@ def IoU(boxA, boxB):
 	iou = interArea / float(boxAArea + boxBArea - interArea)
 	# return the intersection over union value
 	return iou
-
-if __name__ == "__main__":
-    
-    mAP()
