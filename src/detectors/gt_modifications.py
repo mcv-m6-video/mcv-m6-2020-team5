@@ -13,9 +13,9 @@ _FRAME_ID = 0
 SOURCE = "../datasets/ai_challenge_s03_c010-full_annotation.xml"
 
 MAX_CHANGE = 1000
-STDEV_box_change = 0.01 #Increase noise
-PROB_DROPOUT = 0.2
-PROB_GENERATE = 0.2
+STDEV_box_change = 0.005 #Increase noise
+PROB_DROPOUT = 0.3
+PROB_GENERATE = 0.1
 STDEV_box_gen = 0.2
 
 def get_truncated_normal(mean=0, sd=1, low=0, upp=10):
