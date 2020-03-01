@@ -1,5 +1,7 @@
 datasets
 
+.vscode
+
 ########### GENERAL PYTHON FILES TO IGNORE ###########
 # Byte-compiled / optimized / DLL files
 __pycache__/
