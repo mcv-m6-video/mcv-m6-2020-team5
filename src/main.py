@@ -7,7 +7,9 @@ Created on Sat Feb 29 16:03:07 2020
 import cv2
 import detectors as dts
 from detectors.gt_modifications import obtain_gt
-from metrics.mAP import getAvgPrecision
+from metrics.mAP import getMetricsClass
+from metrics.graphs import iouFrame
+
 SOURCE = "../datasets/AICity_data/train/S03/c010/vdo.avi"
 
 detectors = {"gt_noise":dts.gt_predict,
@@ -15,11 +17,13 @@ detectors = {"gt_noise":dts.gt_predict,
              "ssd":  dts.ssd_predict,
              "rcnn": dts.rcnn_predict}
 def main():
-    DETECTOR = "gt_noise"
+    DETECTOR = "yolo"
     cap = cv2.VideoCapture(SOURCE)
     ret, frame = cap.read()
     gt_frames = obtain_gt()
     i = 0
+    avg_precision = []
+    iou = []
     
     detect_func = detectors[DETECTOR]
     while(cap.isOpened()):
@@ -36,10 +40,12 @@ def main():
             #Obtain GT
             
             #Compute the metrics
-            if len(rects[0]) == 4: # No confidence provided
-                avg_precision_frame, iou_frame = getAvgPrecision(rects, gt_frames[str(i)])
-            if len(rects[0]) == 5: # Provided confidence
-                avg_precision_frame, iou_frame = getAvgPrecision(rects, gt_frames[str(i)], True, 1)
+            avg_precision_frame, iou_frame = getMetricsClass(rects, gt_frames[str(i)], nclasses=1)
+            avg_precision.append(avg_precision_frame)
+            iou.append(iou_frame)
+            #Print Graph
+            if i == 350:
+                iouFrame(iou)
             
             #Print Results
             for rect in gt_frames[str(i)]:
