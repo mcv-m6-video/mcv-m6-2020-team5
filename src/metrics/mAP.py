@@ -20,7 +20,7 @@ def getMetricsClass(pred_bboxes, gt_bboxes, nclasses):
         if len(pred_bboxes[0]) == 4: 
             avg_precision_class, iou_class = getMetrics(pred_bboxes, gt_bboxes)
         if len(pred_bboxes[0]) == 5:
-            avg_precision_class, iou_class = getMetrics(pred_bboxes, gt_bboxes, confidence = True, N = 1)
+            avg_precision_class, iou_class = getMetrics(pred_bboxes, gt_bboxes, confidence = True)
 
         aps.append(avg_precision_class)
         iou.append(iou_class)
@@ -46,6 +46,8 @@ def getMetrics(pred_bboxes, gt_bboxes, confidence=False, N=10, IoU_threshold=0.5
     rrank = np.arange(len(pred_bboxes))
     aps = []
     iou = []
+    if confidence:
+        N = 1
     for x in range(N):
         # Sort predicted boxes by confidence or randomly
         if confidence:
@@ -59,12 +61,12 @@ def getMetrics(pred_bboxes, gt_bboxes, confidence=False, N=10, IoU_threshold=0.5
         for idx in rrank:
             if len(tgt_bboxes) is not 0:
                 pdbbox = pred_bboxes[idx][0:4]
-                res = [IoU(pdbbox, tgt_bboxes[i]) for i in range(len(tgt_bboxes))]
-                idx_max = np.where(res==np.max(res))[0][0]
-                conf_max = res[idx_max]
-                iou.append(conf_max)
+                IoU_list = [IoU(pdbbox, tgt_bboxes[i]) for i in range(len(tgt_bboxes))]
+                idx_max = np.where(IoU_list==np.max(IoU_list))[0][0]
+                max_IoU = IoU_list[idx_max]
+                iou.append(max_IoU)
                 # Get tp and fp comparing with Iou threshold
-                if conf_max > IoU_threshold:
+                if max_IoU > IoU_threshold:
                     tp[idx] = 1
                     tgt_bboxes.remove(tgt_bboxes[idx_max])
                 else:
@@ -72,7 +74,7 @@ def getMetrics(pred_bboxes, gt_bboxes, confidence=False, N=10, IoU_threshold=0.5
             else:
                 iou.append(0)
                 fp[idx] = 1
-        ap = average_precision(tp,fp,len(rrank))
+        ap = average_precision(tp,fp,len(gt_bboxes))
         aps.append(ap)
         
     avg_precision = np.mean(aps)

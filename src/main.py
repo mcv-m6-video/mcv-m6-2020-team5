@@ -8,7 +8,7 @@ import cv2
 import detectors as dts
 from detectors.gt_modifications import obtain_gt
 from metrics.mAP import getMetricsClass
-from metrics.graphs import iouFrame
+from metrics.graphs import LinePlot
 
 SOURCE = "../datasets/AICity_data/train/S03/c010/vdo.avi"
 
@@ -17,14 +17,16 @@ detectors = {"gt_noise":dts.gt_predict,
              "ssd":  dts.ssd_predict,
              "rcnn": dts.rcnn_predict}
 def main():
-    DETECTOR = "yolo"
+    DETECTOR = "ssd"
     cap = cv2.VideoCapture(SOURCE)
+    # cap.set(cv2.CAP_PROP_POS_FRAMES,1450)
     ret, frame = cap.read()
     gt_frames = obtain_gt()
     i = 0
     avg_precision = []
-    iou = []
-    
+    iou_history = []
+    iou_plot = LinePlot("Iou_frame",max_val=350)
+    mAP_plot = LinePlot("mAP_frame",max_val=350)
     detect_func = detectors[DETECTOR]
     while(cap.isOpened()):
         # Capture frame-by-frame
@@ -42,10 +44,11 @@ def main():
             #Compute the metrics
             avg_precision_frame, iou_frame = getMetricsClass(rects, gt_frames[str(i)], nclasses=1)
             avg_precision.append(avg_precision_frame)
-            iou.append(iou_frame)
+            iou_history.append(iou_frame)
             #Print Graph
-            if i == 350:
-                iouFrame(iou)
+            # if i == 350:
+            # iou_plot.update(iou_frame)
+            mAP_plot.update(avg_precision_frame)
             
             #Print Results
             for rect in gt_frames[str(i)]:
