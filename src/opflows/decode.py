@@ -17,6 +17,6 @@ def decode_optical_flow(im):
 
 
 if __name__ == "__main__":
-    im = cv2.imread("../datasets/results/LKflow_000045_10.png", cv2.IMREAD_UNCHANGED )
+    im = cv2.imread("/Users/sergi/mcv-m6-2020-team5/datasets/results/LKflow_000045_10.png", cv2.IMREAD_UNCHANGED )
 
     flow_im,valid_flow = decode_optical_flow(im)

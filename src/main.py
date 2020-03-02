@@ -8,7 +8,7 @@ import cv2
 import detectors as dts
 from detectors.gt_modifications import obtain_gt
 from metrics.mAP import getPRCurve
-SOURCE = "../datasets/AICity_data/train/S03/c010/vdo.avi"
+SOURCE = "/Users/sergi/mcv-m6-2020-team5/datasets/AICity_data/train/S03/c010/vdo.avi"
 
 detectors = {"gt_noise":dts.gt_predict,
              "yolo": dts.yolo_predict,
