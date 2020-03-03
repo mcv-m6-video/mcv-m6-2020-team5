@@ -17,10 +17,14 @@ def getMetricsClass(pred_bboxes, gt_bboxes, nclasses):
     aps = []
     iou = []
     for cls in range(nclasses):
-        if len(pred_bboxes[0]) == 4: 
-            avg_precision_class, iou_class = getMetrics(pred_bboxes, gt_bboxes)
-        if len(pred_bboxes[0]) == 5:
-            avg_precision_class, iou_class = getMetrics(pred_bboxes, gt_bboxes, confidence = True)
+        if bool(pred_bboxes):
+            if len(pred_bboxes[0]) == 4: 
+                avg_precision_class, iou_class = getMetrics(pred_bboxes, gt_bboxes)
+            if len(pred_bboxes[0]) == 5:
+                avg_precision_class, iou_class = getMetrics(pred_bboxes, gt_bboxes, confidence = True)
+        else:
+            avg_precision_class = 0
+            iou_class = 0
 
         aps.append(avg_precision_class)
         iou.append(iou_class)
@@ -103,7 +107,7 @@ def average_precision(tp,fp,npos):
     # avoid divide by zero in case the first detection matches a difficult
     # ground truth
     prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
-
+        
     # compute VOC AP using 11 point metric
     ap = 0.0
     for t in np.arange(0.0, 1.1, 0.1):

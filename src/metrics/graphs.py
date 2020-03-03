@@ -48,7 +48,11 @@ class LinePlot(object):
         self.idx+=1
         
 def iouFrame(iou):
+    fig = plt.figure()
     plt.plot(iou)
     plt.ylim(0,1)
-    plt.show()
+    plt.xlabel("Frame")
+    plt.ylabel("IoU")
+    fig.show()
+    # fig.savefig("iou_time")
     

@@ -7,7 +7,9 @@ Created on Sat Feb 29 16:03:07 2020
 import cv2
 import detectors as dts
 from detectors.gt_modifications import obtain_gt
-from metrics.mAP import getPRCurve
+from metrics.mAP import getMetricsClass
+from metrics.graphs import LinePlot, iouFrame
+import numpy as np
 
 SOURCE = "../datasets/AICity_data/train/S03/c010/vdo.avi"
 
@@ -16,7 +18,7 @@ detectors = {"gt_noise":dts.gt_predict,
              "ssd":  dts.ssd_predict,
              "rcnn": dts.rcnn_predict}
 def main():
-    DETECTOR = "ssd"
+    DETECTOR = "yolo"
     cap = cv2.VideoCapture(SOURCE)
     # cap.set(cv2.CAP_PROP_POS_FRAMES,1450)
     ret, frame = cap.read()
@@ -32,6 +34,7 @@ def main():
         ret, frame = cap.read()
         if ret == True:
             #predict over the frame
+            print("Frame: ", i)
             rects = detect_func(frame)
             
             #Retrack over the frame
@@ -45,9 +48,10 @@ def main():
             avg_precision.append(avg_precision_frame)
             iou_history.append(iou_frame)
             #Print Graph
-            # if i == 350:
+            # if i == 500:
+                # iouFrame(iou_history)
             # iou_plot.update(iou_frame)
-            mAP_plot.update(avg_precision_frame)
+            # mAP_plot.update(avg_precision_frame)
             
             #Print Results
             for rect in gt_frames[str(i)]:
@@ -66,6 +70,8 @@ def main():
         # Break the loop
         else:
             break
+    print("mIoU for all the video: ", np.mean(iou_history))
+    print("mAP for all the video: ", np.mean(avg_precision))
     cap.release()
     
     
