@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 """
 Created on Mon Mar 02 12:25:19 2020
@@ -80,3 +81,4 @@ def obtain_frame_and_figure(figure_im, frame):
     final_figure = np.hstack((f_figure_im, frame))
     cv2.imshow("test", final_figure)
     return final_figure
+

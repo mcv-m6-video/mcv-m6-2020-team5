@@ -73,7 +73,6 @@ def predict(frame):
         new_rects.append(res_area)
     rects = new_rects
     #generate random rectangles
-
     maxh, maxw = frame.shape[:2]
     wh_changes = get_truncated_normal(0, STDEV_box_gen, 0, 1)
     while np.random.random() < PROB_GENERATE:
