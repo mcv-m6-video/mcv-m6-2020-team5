@@ -17,6 +17,9 @@ detectors = {"gt_noise":dts.gt_predict,
              "ssd":  dts.ssd_predict,
              "rcnn": dts.rcnn_predict}
 def main():
+    SAVE_PLOT_IOU = True
+    SAVE_EVERY_X_FRAME = 1
+    STOP_AT = 500
     DETECTOR = "ssd"
     cap = cv2.VideoCapture(SOURCE)
     # cap.set(cv2.CAP_PROP_POS_FRAMES,1450)
@@ -25,10 +28,10 @@ def main():
     i = 0
     avg_precision = []
     iou_history = []
-    iou_plot = LinePlot("Iou_frame",max_val=350)
-    mAP_plot = LinePlot("mAP_frame",max_val=350)
+    iou_plot = LinePlot("IoU_frame",max_val=300, save_plots=SAVE_PLOT_IOU)
+    # mAP_plot = LinePlot("mAP_frame",max_val=350)
     detect_func = detectors[DETECTOR]
-    while(cap.isOpened()):
+    while(cap.isOpened() and (STOP_AT == -1 or i < STOP_AT)):
         # Capture frame-by-frame
         ret, frame = cap.read()
         if ret == True:
@@ -47,8 +50,8 @@ def main():
             iou_history.append(iou_frame)
             #Print Graph
             # if i == 350:
-            # iou_plot.update(iou_frame)
-            mAP_plot.update(avg_precision_frame)
+            iou_plot.update(iou_frame)
+            # mAP_plot.update(avg_precision_frame)
             
             #Print Results
             for rect in gt_frames[str(i)]:
@@ -60,6 +63,8 @@ def main():
                 pt2 = (int(rect[2]), int(rect[3]))
                 cv2.rectangle(frame, pt1, pt2, (255, 0, 0), thickness=2)
             cv2.imshow('Frame',frame)
+            if(SAVE_PLOT_IOU and (i%SAVE_EVERY_X_FRAME)==0):
+                iou_plot.save_plot(cv2.resize(frame, None, fx=0.3, fy=0.3))
             # Press Q on keyboard to  exit
             if cv2.waitKey(25) & 0xFF == ord('q'):
                 break
