@@ -21,14 +21,14 @@ def flowmetrics(pred_flow, gt_flow, thres = 3):
     return msen,pepn
 
 def main():
-    img_paths = ["../../datasets/results/LKflow_000045_10.png",
-                 "../../datasets/results/LKflow_000157_10.png"]
+    img_paths = ["../datasets/results/LKflow_000045_10.png",
+                 "../datasets/results/LKflow_000157_10.png"]
     
-    gt_paths = ["../../datasets/of_pred/noc_000045_10.png",
-                "../../datasets/of_pred/noc_000157_10.png"]
+    gt_paths = ["../datasets/of_pred/noc_000045_10.png",
+                "../datasets/of_pred/noc_000157_10.png"]
     
-    real_paths = ["../../datasets/of_pred/000045_10.png",
-                "../../datasets/of_pred/000157_10.png"]
+    real_paths = ["../datasets/of_pred/000045_10.png",
+                "../datasets/of_pred/000157_10.png"]
     
     select_image = 1 #0: image 1, 1: image 2
     
