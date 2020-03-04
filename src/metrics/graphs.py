@@ -39,8 +39,8 @@ class LinePlot(object):
             self._y_data[-1] = new_line
             # self.ax.set_xlim(self.idx-self.max_val, self.idx)
             # self.ax.set_xticks()
-            ticks = np.arange(0, self.max_val, 1)
-            labels = np.arange(self.idx-self.max_val, self.idx, 1)
+            ticks = np.arange(0, self.max_val+1, 1)
+            labels = np.arange(self.idx-self.max_val, self.idx-1, 1)
             labels_mask = np.where(np.logical_not(labels%50))
             ticks = ticks[labels_mask]
             labels = labels[labels_mask]

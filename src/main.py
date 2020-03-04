@@ -36,7 +36,7 @@ def main():
     iou_plot = LinePlot("IoU_frame",max_val=300, save_plots=SAVE_PLOT_IOU)
     # mAP_plot = LinePlot("mAP_frame",max_val=350)
     detect_func = detectors[DETECTOR]
-    while(cap.isOpened() and (STOP_AT == -1 or i < STOP_AT)):
+    while(cap.isOpened() and (STOP_AT == -1 or i <= STOP_AT)):
         # Capture frame-by-frame
         ret, frame = cap.read()
         if ret == True:
