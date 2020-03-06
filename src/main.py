@@ -7,6 +7,7 @@ Created on Sat Feb 29 16:03:07 2020
 import cv2
 import detectors as dts
 from detectors.gt_modifications import obtain_gt
+from detectors.backgrounds import BGSTModule
 from metrics.mAP import getMetricsClass
 from metrics.graphs import LinePlot, iouFrame
 import numpy as np
@@ -16,16 +17,23 @@ SOURCE = "../datasets/AICity_data/train/S03/c010/vdo.avi"
 detectors = {"gt_noise":dts.gt_predict,
              "yolo": dts.yolo_predict,
              "ssd":  dts.ssd_predict,
-             "rcnn": dts.rcnn_predict}
+             "rcnn": dts.rcnn_predict,
+             "MOG2": None,
+             "CNT": None}
 def main():
 
     SAVE_PLOT_IOU = True
     SAVE_EVERY_X_FRAME = 1
     STOP_AT = 500
-
-
-    DETECTOR = "yolo"
-
+    DETECTOR = "Subsense"
+    
+    det_backgrounds = ["MOG", "MOG2", "CNT", "GMG", "LSBP", "GSOC", "Subsense", "Lobster"]
+    if(DETECTOR in det_backgrounds):
+        bgsg_module = BGSTModule(bs_type = DETECTOR)
+        f = bgsg_module.get_contours
+        for d in det_backgrounds:
+            detectors[d] = f
+        
     cap = cv2.VideoCapture(SOURCE)
     # cap.set(cv2.CAP_PROP_POS_FRAMES,1450)
     ret, frame = cap.read()
@@ -36,6 +44,7 @@ def main():
     iou_plot = LinePlot("IoU_frame",max_val=300, save_plots=SAVE_PLOT_IOU)
     # mAP_plot = LinePlot("mAP_frame",max_val=350)
     detect_func = detectors[DETECTOR]
+    
     while(cap.isOpened() and (STOP_AT == -1 or i <= STOP_AT)):
         # Capture frame-by-frame
         ret, frame = cap.read()
