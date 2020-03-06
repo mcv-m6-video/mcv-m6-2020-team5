@@ -6,6 +6,7 @@ Created on Sat Feb 29 16:03:07 2020
 """
 import cv2
 import detectors as dts
+from detectors.single_gaussian import gausian_back_remov
 from detectors.gt_modifications import obtain_gt
 from metrics.mAP import getMetricsClass
 from metrics.graphs import LinePlot, iouFrame
@@ -22,6 +23,10 @@ def main():
     SAVE_PLOT_IOU = True
     SAVE_EVERY_X_FRAME = 1
     STOP_AT = 500
+    NUM_OF_TRAINING_FRAMES = 100
+    
+    background_removal = gausian_back_remov(0.01,2.5)
+    training_frames = []
 
 
     DETECTOR = "yolo"
@@ -48,16 +53,25 @@ def main():
             
             #Classify the result
             
+            if(i == NUM_OF_TRAINING_FRAMES):
+                background_removal.train(training_frames)
+            else:
+                if(i < NUM_OF_TRAINING_FRAMES):
+                    training_frames.append(np.copy(frame))
+                else:
+                    back_remov_frame = background_removal.apply(frame)
+                    cv2.imshow("removed",back_remov_frame)
+            
             #Obtain GT
             
             #Compute the metrics
-            avg_precision_frame, iou_frame = getMetricsClass(rects, gt_frames[str(i)], nclasses=1)
-            avg_precision.append(avg_precision_frame)
-            iou_history.append(iou_frame)
+            # avg_precision_frame, iou_frame = getMetricsClass(rects, gt_frames[str(i)], nclasses=1)
+            # avg_precision.append(avg_precision_frame)
+            # iou_history.append(iou_frame)
             #Print Graph
 
 
-            iou_plot.update(iou_frame)
+            # iou_plot.update(iou_frame)
 
             # if i == 500:
                 # iouFrame(iou_history)
@@ -76,7 +90,9 @@ def main():
                 cv2.rectangle(frame, pt1, pt2, (255, 0, 0), thickness=2)
             cv2.imshow('Frame',frame)
             if(SAVE_PLOT_IOU and (i%SAVE_EVERY_X_FRAME)==0):
-                iou_plot.save_plot(cv2.resize(frame, None, fx=0.3, fy=0.3))
+                # iou_plot.save_plot(cv2.resize(frame, None, fx=0.3, fy=0.3))
+                pass
+
             # Press Q on keyboard to  exit
             if cv2.waitKey(25) & 0xFF == ord('q'):
                 break
