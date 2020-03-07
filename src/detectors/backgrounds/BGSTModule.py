@@ -9,7 +9,8 @@ import cv2
 import numpy as np
 import os
 
-from subsense.Python.Subsense import Subsense, Lobster
+# from .subsense.Python.Subsense import Subsense, Lobster
+from .single_gaussian import gausian_back_remov
 
 cv2mag, cv2med, cv3min = cv2.__version__.split(".")
 
@@ -38,6 +39,13 @@ class BGSTModule(object):
         self.kernV = None
 
         self.initialization()
+        
+        self.orig_bgseg = None
+        self.last_bgseg = None
+    def get_orig_bgseg(self):
+        return self.orig_bgseg
+    def get_bgseg(self):
+        return self.last_bgseg
     def initialization(self):
         # scene_mask = cv2.imread(self.scene_mask_path,0)
         
@@ -64,10 +72,12 @@ class BGSTModule(object):
             self.fgbg = cv2.bgsegm.createBackgroundSubtractorLSBP()
         elif(self.bs_type == "GSOC"):
             self.fgbg = cv2.bgsegm.createBackgroundSubtractorGSOC()
-        elif(self.bs_type == "Subsense"):
-            self.fgbg = Subsense()
-        elif(self.bs_type == "Lobster"):
-            self.fgbg = Lobster()
+        elif(self.bs_type == "gauss_black_rem"):
+            self.fgbg = gausian_back_remov(0.01, 2.5)
+        # elif(self.bs_type == "Subsense"):
+        #     self.fgbg = Subsense()
+        # elif(self.bs_type == "Lobster"):
+        #     self.fgbg = Lobster()
             
             
         self.kern1 = np.ones((5,5),np.uint8)
@@ -79,24 +89,27 @@ class BGSTModule(object):
         d = self.d
         d = 1
         dframe = frame[0::d,0::d,:]
-        dframe = cv2.GaussianBlur(dframe, (5, 5), 0)
+        dframe = cv2.GaussianBlur(dframe, (7, 7), 0)
         if(self.bs_type ==  "CNT"):
             fmask = self.fgbg.apply(dframe, learningRate=0.99)
         else:
             fmask = self.fgbg.apply(dframe)
+        if(fmask is None):
+            fmask = np.zeros(frame.shape[:2], dtype=np.uint8)
         res = cv2.bitwise_and(fmask,fmask,mask = self.scene_mask)
-
-        
         res[res<127] = 0
         res[res>=127] = 255
+        
+        self.orig_bgseg = res
+        
         morph = res
-
         morph = cv2.morphologyEx(morph, cv2.MORPH_CLOSE, self.kern1)
         morph = cv2.morphologyEx(morph, cv2.MORPH_OPEN,  self.kern2)
         morph = cv2.morphologyEx(morph, cv2.MORPH_CLOSE, self.kern3)
         # cv2.imshow("blur frame", dframe)
         cv2.imshow("bgsg test", morph)
         binary = cv2.bitwise_and(morph,morph)
+        self.last_bgseg = binary
         if(int(cv2mag) > 3):
             contours,__ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         else:

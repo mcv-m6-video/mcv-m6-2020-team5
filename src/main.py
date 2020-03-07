@@ -6,28 +6,30 @@ Created on Sat Feb 29 16:03:07 2020
 """
 import cv2
 import detectors as dts
+
 from detectors.gt_modifications import obtain_gt
 from detectors.backgrounds import BGSTModule
 from metrics.mAP import getMetricsClass
 from metrics.graphs import LinePlot, iouFrame
 import numpy as np
 
+from display import print_func
+
+from config import general as gconf
+
 SOURCE = "../datasets/AICity_data/train/S03/c010/vdo.avi"
 
 detectors = {"gt_noise":dts.gt_predict,
              "yolo": dts.yolo_predict,
              "ssd":  dts.ssd_predict,
-             "rcnn": dts.rcnn_predict,
-             "MOG2": None,
-             "CNT": None}
+             "rcnn": dts.rcnn_predict}
 def main():
-
-    SAVE_PLOT_IOU = True
-    SAVE_EVERY_X_FRAME = 1
     STOP_AT = 500
-    DETECTOR = "Subsense"
+
+    DETECTOR = "MOG2"
     
-    det_backgrounds = ["MOG", "MOG2", "CNT", "GMG", "LSBP", "GSOC", "Subsense", "Lobster"]
+    det_backgrounds = ["gauss_black_rem", "MOG", "MOG2", "CNT", "GMG", "LSBP", "GSOC", "Subsense", "Lobster"]
+    bgsg_module = None
     if(DETECTOR in det_backgrounds):
         bgsg_module = BGSTModule(bs_type = DETECTOR)
         f = bgsg_module.get_contours
@@ -36,12 +38,14 @@ def main():
         
     cap = cv2.VideoCapture(SOURCE)
     # cap.set(cv2.CAP_PROP_POS_FRAMES,1450)
-    ret, frame = cap.read()
+    # ret, frame = cap.read()
     gt_frames = obtain_gt()
     i = 0
     avg_precision = []
     iou_history = []
-    iou_plot = LinePlot("IoU_frame",max_val=300, save_plots=SAVE_PLOT_IOU)
+    iou_plot = LinePlot(gconf.plots.iou.name,
+                        max_val=gconf.plots.iou.max_val,
+                        save_plots=gconf.plots.iou.save)
     # mAP_plot = LinePlot("mAP_frame",max_val=350)
     detect_func = detectors[DETECTOR]
     
@@ -51,22 +55,23 @@ def main():
         if ret == True:
             #predict over the frame
             print("Frame: ", i)
-            rects = detect_func(frame)
+            # rects = detect_func(frame)
             
             #Retrack over the frame
             
             #Classify the result
-            
+            dt_rects = detect_func(frame)
+
             #Obtain GT
             
             #Compute the metrics
-            avg_precision_frame, iou_frame = getMetricsClass(rects, gt_frames[str(i)], nclasses=1)
+            avg_precision_frame, iou_frame = getMetricsClass(dt_rects, gt_frames[str(i)], nclasses=1)
             avg_precision.append(avg_precision_frame)
             iou_history.append(iou_frame)
             #Print Graph
 
 
-            iou_plot.update(iou_frame)
+            # iou_plot.update(iou_frame)
 
             # if i == 500:
                 # iouFrame(iou_history)
@@ -75,17 +80,14 @@ def main():
             # mAP_plot.update(avg_precision_frame)
             
             #Print Results
-            for rect in gt_frames[str(i)]:
-                pt1 = (int(rect[0]), int(rect[1]))
-                pt2 = (int(rect[2]), int(rect[3]))
-                cv2.rectangle(frame, pt1, pt2, (0, 255, 0), thickness=2)
-            for rect in rects:
-                pt1 = (int(rect[0]), int(rect[1]))
-                pt2 = (int(rect[2]), int(rect[3]))
-                cv2.rectangle(frame, pt1, pt2, (255, 0, 0), thickness=2)
+            ## prepare data
+            gt_rects = gt_frames[str(i)]
+            bgseg = None if bgsg_module is None else bgsg_module.get_bgseg()
+            orig_bgseg = None if bgsg_module is None else bgsg_module.get_orig_bgseg()
+
+            frame = print_func(frame.copy(), gt_rects, dt_rects, bgseg, orig_bgseg, gconf.pout)
             cv2.imshow('Frame',frame)
-            if(SAVE_PLOT_IOU and (i%SAVE_EVERY_X_FRAME)==0):
-                iou_plot.save_plot(cv2.resize(frame, None, fx=0.3, fy=0.3))
+            
             # Press Q on keyboard to  exit
             if cv2.waitKey(25) & 0xFF == ord('q'):
                 break
