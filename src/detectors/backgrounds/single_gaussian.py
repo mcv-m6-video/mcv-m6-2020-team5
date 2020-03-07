@@ -10,11 +10,11 @@ import cv2
 
 
 class gausian_back_remov(object):
-    def __init__(self, rho, thrs, thr_n_trainings=100):
+    def __init__(self, rho, alpha, thr_n_trainings=125):
         self.mean_image = None
         self.variance_image = None
         self.rho = rho
-        self.thrs = thrs
+        self.alpha = alpha
         self._n_of_trainings = 0
         self.thr_n_of_training = thr_n_trainings
         self.trained = False
@@ -48,8 +48,8 @@ class gausian_back_remov(object):
         gray_frame = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
         
         # we check both sides of the gaussian to see if it's inside
-        positive_variance = gray_frame <(self.mean_image+self.thrs*self.variance_image) 
-        negative_variance = gray_frame >(self.mean_image-self.thrs*self.variance_image) 
+        positive_variance = gray_frame <(self.mean_image+self.alpha*(self.variance_image+2)) 
+        negative_variance = gray_frame >(self.mean_image-self.alpha*(self.variance_image+2)) 
         
         # if the values are inbetween the thresholds it's background 
         is_background = (positive_variance*negative_variance)
@@ -74,7 +74,7 @@ class gausian_back_remov(object):
     
     def __update_variance_image(self,frame,background_mask,foreground_mask):
         # we update only the pixels that are background
-        new_variance_image = background_mask*( (1-self.rho)*self.variance_image+self.rho*frame )
+        new_variance_image = background_mask*( (1-self.rho)*self.variance_image+self.rho*frame)
         new_variance_image = new_variance_image + foreground_mask*self.variance_image
         self.variance_image = new_variance_image
 

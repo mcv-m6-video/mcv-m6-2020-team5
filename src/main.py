@@ -24,9 +24,10 @@ detectors = {"gt_noise":dts.gt_predict,
              "ssd":  dts.ssd_predict,
              "rcnn": dts.rcnn_predict}
 def main():
+    INIT_AT = 125
     STOP_AT = 500
 
-    DETECTOR = "MOG2"
+    DETECTOR = "gauss_black_rem"
     
     det_backgrounds = ["gauss_black_rem", "MOG", "MOG2", "CNT", "GMG", "LSBP", "GSOC", "Subsense", "Lobster"]
     bgsg_module = None
@@ -66,8 +67,9 @@ def main():
             
             #Compute the metrics
             avg_precision_frame, iou_frame = getMetricsClass(dt_rects, gt_frames[str(i)], nclasses=1)
-            avg_precision.append(avg_precision_frame)
-            iou_history.append(iou_frame)
+            if i > INIT_AT:
+                avg_precision.append(avg_precision_frame)
+                iou_history.append(iou_frame)
             #Print Graph
 
 
