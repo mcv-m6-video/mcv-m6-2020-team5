@@ -5,10 +5,6 @@ import pathlib
 import cv2
 
 
-
-
-
-
 class gausian_back_remov(object):
     def __init__(self, rho, alpha, thr_n_trainings=125):
         self.mean_image = None
@@ -54,7 +50,6 @@ class gausian_back_remov(object):
         # if the values are inbetween the thresholds it's background 
         is_background = (positive_variance*negative_variance)
         is_foreground = np.logical_not(is_background)
-        
         self.__update_mean_image(gray_frame,is_background,is_foreground)
         self.__update_variance_image(gray_frame,is_background,is_foreground)
         
@@ -74,7 +69,8 @@ class gausian_back_remov(object):
     
     def __update_variance_image(self,frame,background_mask,foreground_mask):
         # we update only the pixels that are background
-        new_variance_image = background_mask*( (1-self.rho)*self.variance_image+self.rho*frame)
+        # new_variance_image = background_mask*( (1-self.rho)*self.variance_image+self.rho*(np.square(frame-self.mean_image)))
+        new_variance_image = background_mask*( (1-self.rho)*self.variance_image+self.rho*frame)       
         new_variance_image = new_variance_image + foreground_mask*self.variance_image
         self.variance_image = new_variance_image
 

@@ -17,7 +17,7 @@ cv2mag, cv2med, cv3min = cv2.__version__.split(".")
 class BGSTModule(object):
     def __init__(self, downsample=1, scene_mask_path="", bs_type = "MOG2", \
                  history = 1000, varThreshold=30, detectShadows=True, \
-                 trigger=0, *args, **kwargs):
+                 rho=0, alpha=1, trigger=0, *args, **kwargs):
         
         # super(BGSGThread, self).__init__(img_buffer, *args, **kwargs)
         
@@ -25,6 +25,8 @@ class BGSTModule(object):
         self.scene_mask_path = scene_mask_path
         
         self.bs_type = bs_type
+        self.rho = rho
+        self.alpha = alpha
         
         self.history = history
         self.varThreshold = varThreshold
@@ -73,7 +75,7 @@ class BGSTModule(object):
         elif(self.bs_type == "GSOC"):
             self.fgbg = cv2.bgsegm.createBackgroundSubtractorGSOC()
         elif(self.bs_type == "gauss_black_rem"):
-            self.fgbg = gausian_back_remov(0.01, 0.7)
+            self.fgbg = gausian_back_remov(self.rho, self.alpha)
         # elif(self.bs_type == "Subsense"):
         #     self.fgbg = Subsense()
         # elif(self.bs_type == "Lobster"):
