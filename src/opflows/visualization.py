@@ -15,6 +15,7 @@ def color_flow(vects):
     hsv[...,2] = cv2.normalize(mag,None,0,255,cv2.NORM_MINMAX)
     hsv = hsv.astype(np.uint8)
     rgb = cv2.cvtColor(hsv,cv2.COLOR_HSV2BGR)
+    rgb = cv2.cvtColor(rgb,cv2.COLOR_BGR2RGB)
     # rgb = rgb.astype(np.uint8)
     return rgb
 
@@ -26,9 +27,6 @@ def arrow_flow(vects,im):
     y = np.arange(0, im.shape[0], 1)
     x = np.arange(0, im.shape[1], 1)
     x, y = np.meshgrid(x, y)
-    
-    print(u.shape)
-    print(v.shape)
     
     idxi = []
     idxj = []
@@ -56,5 +54,6 @@ def arrow_flow(vects,im):
     plt.imshow(norm_im) #Posar-la en el rang que toca
     plt.quiver(idxj, idxi, uu, vv, scale_units='xy', angles='xy', scale = 1., color='w')
     plt.show()
+    plt.savefig('plot1.png')
     
     #Don't print arrows with 0's
