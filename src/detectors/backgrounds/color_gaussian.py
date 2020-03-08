@@ -52,7 +52,8 @@ class color_gausian_back_remov(object):
         is_foreground = np.logical_not(is_background)
         
         # we now decide if it's background or foreground
-        is_background,is_foreground = self.__voting_system(is_background,is_foreground)
+        # is_background,is_foreground = self.__voting_system(is_background,is_foreground)
+        is_background,is_foreground = self.__unanimity_for_background(is_background,is_foreground)
         
         self.__update_mean_image(frame,is_background,is_foreground)
         self.__update_variance_image(frame,is_background,is_foreground)
@@ -68,9 +69,15 @@ class color_gausian_back_remov(object):
         ret_is_foreground = np.logical_not(ret_is_background)
         
         return np.dstack( ((ret_is_background),)*dim ),np.dstack( ((ret_is_foreground),)*dim )
-        
-        
     
+    def __unanimity_for_background(self,is_background,is_foreground):
+        dim = is_background.shape[2]
+        
+        ret_is_background = np.prod(is_background,axis=2).astype("bool")
+        ret_is_foreground = np.logical_not(ret_is_background)
+        
+        return np.dstack( ((ret_is_background),)*dim ),np.dstack( ((ret_is_foreground),)*dim )
+        
     # def __convert_array_to_gray(self,frame_array):
     #     for frame_idx in range(len(frame_array)):
     #         frame_array[frame_idx] = cv2.cvtColor(frame_array[frame_idx],cv2.COLOR_BGR2GRAY)
