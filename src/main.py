@@ -26,13 +26,13 @@ detectors = {"gt_noise":dts.gt_predict,
 
 def main():
     INIT_AT = 125 # where to init computing IoU and mAP, after training the background
-    STOP_AT = 500
-    RHO = 0.01
-    ALPHA = 1
+    STOP_AT = -1
+    RHO = 0.1
+    ALPHA = 4
 
-    DETECTOR = "gauss_black_rem"
+    DETECTOR = "color_gauss_black_rem"
     
-    det_backgrounds = ["gauss_black_rem", "MOG", "MOG2", "CNT", "GMG", "LSBP", "GSOC", "Subsense", "Lobster"]
+    det_backgrounds = ["color_gauss_black_rem","gauss_black_rem", "MOG", "MOG2", "CNT", "GMG", "LSBP", "GSOC", "Subsense", "Lobster"]
     bgsg_module = None
     if(DETECTOR in det_backgrounds):
         bgsg_module = BGSTModule(bs_type = DETECTOR, rho = RHO, alpha = ALPHA)
@@ -73,10 +73,11 @@ def main():
             if i > INIT_AT:
                 avg_precision.append(avg_precision_frame)
                 iou_history.append(iou_frame)
+                iou_plot.update(iou_frame)
             #Print Graph
 
 
-            # iou_plot.update(iou_frame)
+            
 
             # if i == 500:
                 # iouFrame(iou_history)
