@@ -6,7 +6,7 @@ import cv2
 
 
 class gausian_back_remov(object):
-    def __init__(self, rho, alpha, thr_n_trainings=125):
+    def __init__(self, rho, alpha, thr_n_trainings=535):
         self.mean_image = None
         self.variance_image = None
         self.rho = rho
@@ -24,7 +24,7 @@ class gausian_back_remov(object):
         training_frames = np.stack(training_frames,axis=2)
         
         self.mean_image = np.mean(training_frames,axis=2)
-        self.variance_image = np.var(training_frames,axis=2)
+        self.variance_image = np.std(training_frames,axis=2)
         
     def apply(self,frame):
         if(self._n_of_trainings < self.thr_n_of_training):
@@ -68,9 +68,10 @@ class gausian_back_remov(object):
         self.mean_image = new_mean_image
     
     def __update_variance_image(self,frame,background_mask,foreground_mask):
+        new_variance = np.std(np.dstack((frame,self.mean_image)),axis=2)+2
         # we update only the pixels that are background
-        # new_variance_image = background_mask*( (1-self.rho)*self.variance_image+self.rho*(np.square(frame-self.mean_image)))
-        new_variance_image = background_mask*( (1-self.rho)*self.variance_image+self.rho*frame)       
+        new_variance_image = background_mask*( (1-self.rho)*self.variance_image+self.rho*new_variance )
+        # new_variance_image = background_mask*( (1-self.rho)*self.variance_image+self.rho*frame)       
         new_variance_image = new_variance_image + foreground_mask*self.variance_image
         self.variance_image = new_variance_image
 
