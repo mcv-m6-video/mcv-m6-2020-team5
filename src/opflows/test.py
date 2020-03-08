@@ -1,4 +1,3 @@
-
 import cv2
 import numpy as np
 from decode import decode_optical_flow
@@ -60,5 +59,3 @@ def main():
     
 
 
-if __name__ == "__main__":
-    main()

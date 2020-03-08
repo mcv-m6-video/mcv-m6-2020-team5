@@ -1,3 +1,4 @@
+
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -57,3 +58,4 @@ def arrow_flow(vects,im):
     plt.savefig('plot1.png')
     
     #Don't print arrows with 0's
+

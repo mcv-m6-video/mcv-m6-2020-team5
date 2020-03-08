@@ -1,8 +1,6 @@
 import cv2
 import numpy as np
 
-
-
 def decode_optical_flow(im):
     im_float = im.astype("double")
     w,h = im_float.shape[:2]
@@ -18,5 +16,4 @@ def decode_optical_flow(im):
 
 if __name__ == "__main__":
     im = cv2.imread("/Users/sergi/mcv-m6-2020-team5/datasets/results/LKflow_000045_10.png", cv2.IMREAD_UNCHANGED )
-
     flow_im,valid_flow = decode_optical_flow(im)
