@@ -30,10 +30,11 @@ def main():
     RHO = 0 #If different than 0 then adaptive
     ALPHA = 1.5 #Try for different values (2.5 should be good)
 
-    DETECTOR = "gauss_black_rem"
+    DETECTOR = "color_gauss_black_rem"
     
-    det_backgrounds = ["gauss_black_rem", "MOG", "MOG2", "CNT", "GMG", "LSBP", "GSOC", "Subsense", "Lobster"]
-    bgsg_module =  None
+    det_backgrounds = ["color_gauss_black_rem","gauss_black_rem", "MOG", "MOG2", "CNT", "GMG", "LSBP", "GSOC", "Subsense", "Lobster"]
+    bgsg_module = None
+
     if(DETECTOR in det_backgrounds):
         bgsg_module = BGSTModule(bs_type = DETECTOR, rho = RHO, alpha = ALPHA, init_at = INIT_AT)
         f = bgsg_module.get_contours
@@ -73,10 +74,11 @@ def main():
             if i > INIT_AT:
                 avg_precision.append(avg_precision_frame)
                 iou_history.append(iou_frame)
+                iou_plot.update(iou_frame)
             #Print Graph
 
 
-            # iou_plot.update(iou_frame)
+            
 
             # if i == 500:
                 # iouFrame(iou_history)

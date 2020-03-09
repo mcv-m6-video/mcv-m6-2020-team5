@@ -11,6 +11,7 @@ import os
 
 # from .subsense.Python.Subsense import Subsense, Lobster
 from .single_gaussian import gausian_back_remov
+from .color_gaussian import color_gausian_back_remov
 
 cv2mag, cv2med, cv3min = cv2.__version__.split(".")
 
@@ -75,11 +76,21 @@ class BGSTModule(object):
         elif(self.bs_type == "GSOC"):
             self.fgbg = cv2.bgsegm.createBackgroundSubtractorGSOC()
         elif(self.bs_type == "gauss_black_rem"):
+<<<<<<< HEAD
             self.fgbg = gausian_back_remov(self.rho, self.alpha, self.init_at)
         #elif(self.bs_type == "Subsense"):
             #self.fgbg = Subsense()
         #elif(self.bs_type == "Lobster"):
             #self.fgbg = Lobster()
+=======
+            self.fgbg = gausian_back_remov(self.rho, self.alpha)
+        elif(self.bs_type == "color_gauss_black_rem"):
+            self.fgbg = color_gausian_back_remov(self.rho, self.alpha)
+        # elif(self.bs_type == "Subsense"):
+        #     self.fgbg = Subsense()
+        # elif(self.bs_type == "Lobster"):
+        #     self.fgbg = Lobster()
+>>>>>>> 53ffe03f38e6806032681e250c41a0f0f9e9412c
             
             
         self.kern1 = np.ones((5,5),np.uint8)
@@ -102,6 +113,8 @@ class BGSTModule(object):
         res[res<127] = 0
         res[res>=127] = 255
         
+        cv2.imshow("mask direct", res)
+        
         self.orig_bgseg = res
         
         morph = res
@@ -109,7 +122,7 @@ class BGSTModule(object):
         morph = cv2.morphologyEx(morph, cv2.MORPH_OPEN,  self.kern2)
         morph = cv2.morphologyEx(morph, cv2.MORPH_CLOSE, self.kern3)
         # cv2.imshow("blur frame", dframe)
-        cv2.imshow("bgsg test", morph)
+        # cv2.imshow("bgsg test", morph)
         binary = cv2.bitwise_and(morph,morph)
         self.last_bgseg = binary
         if(int(cv2mag) > 3):
