@@ -11,13 +11,18 @@ import os
 
 # from .subsense.Python.Subsense import Subsense, Lobster
 from .single_gaussian import gausian_back_remov
+from .color_gaussian import color_gausian_back_remov
 
 cv2mag, cv2med, cv3min = cv2.__version__.split(".")
 
 class BGSTModule(object):
+<<<<<<< HEAD
     def __init__(self, downsample=1, scene_mask_path=None, bs_type = "MOG2", \
                  history = 1000, varThreshold=30, detectShadows=True, \
                  trigger=0, *args, **kwargs):
+=======
+    def __init__(self, downsample=1, scene_mask_path="", bs_type = "MOG2",history = 1000, varThreshold=30, detectShadows=True,rho=0, alpha=1, trigger=0, init_at = 535, color_space = 'GRAY',*args, **kwargs):
+>>>>>>> 57064f8d249f488ccdf793d8686091076004a719
         
         # super(BGSGThread, self).__init__(img_buffer, *args, **kwargs)
         
@@ -25,6 +30,10 @@ class BGSTModule(object):
         self.scene_mask_path = scene_mask_path
         
         self.bs_type = bs_type
+        self.rho = rho
+        self.alpha = alpha
+        
+        self.init_at = init_at
         
         self.history = history
         self.varThreshold = varThreshold
@@ -34,6 +43,8 @@ class BGSTModule(object):
 
         
         self.fgbg = None
+        
+        self.color_space = color_space
         
         
         self.kern3 = None
@@ -76,7 +87,9 @@ class BGSTModule(object):
         elif(self.bs_type == "GSOC"):
             self.fgbg = cv2.bgsegm.createBackgroundSubtractorGSOC()
         elif(self.bs_type == "gauss_black_rem"):
-            self.fgbg = gausian_back_remov(0.01, 0.7)
+            self.fgbg = gausian_back_remov(self.rho, self.alpha, self.init_at,self.color_space)        
+        elif(self.bs_type == "color_gauss_black_rem"):
+            self.fgbg = color_gausian_back_remov(self.rho, self.alpha, self.init_at, self.color_space)
         # elif(self.bs_type == "Subsense"):
         #     self.fgbg = Subsense()
         # elif(self.bs_type == "Lobster"):
@@ -103,13 +116,15 @@ class BGSTModule(object):
         res[res<127] = 0
         res[res>=127] = 255
         
+        cv2.imshow("mask direct", res)
+        
         self.orig_bgseg = res
         
         morph = res
         morph = cv2.morphologyEx(morph, cv2.MORPH_CLOSE, self.kern1)
         morph = cv2.morphologyEx(morph, cv2.MORPH_OPEN,  self.kern2)
         morph = cv2.morphologyEx(morph, cv2.MORPH_CLOSE, self.kern3)
-        # cv2.imshow("blur frame", dframe)
+        
         binary = cv2.bitwise_and(morph,morph)
         self.last_bgseg = binary
         if(int(cv2mag) > 3):

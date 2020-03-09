@@ -1,34 +1,36 @@
-
 import cv2
 import numpy as np
 from decode import decode_optical_flow
 from visualization import color_flow,arrow_flow
+import matplotlib.pyplot as plt
 
 
-def flowmetrics(pred_flow, gt_flow, thres = 3):
+def flowmetrics(pred_flow, gt_flow, valid_flow, thres = 3):
     
-    error = pred_flow - gt_flow
+    #Convert flows to vectors and: (pred - gt)^2
+    error = (pred_flow[...,:2] - gt_flow[...,:2])**2
     
-    npixels = pred_flow.shape[0]*pred_flow.shape[1]
-    numberpx = np.sum(np.sum(i > thres for i in error))    
+    error_n = error[valid_flow]
     
-    pepn = numberpx/npixels
+    #sqrt((pred-gt)^2)
+    mse = np.sqrt(error_n[:,0]+error_n[:,1])
     
-    power = error**2
-    summed = np.sum(power)    
-    msen = summed/npixels  
+    #1/N*sum(sqrt((pred-gt)^2))
+    msen = mse.mean()
+    
+    pepn = 100*(mse > thres).sum()/mse.size
     
     return msen,pepn
 
 def main():
-    img_paths = ["../datasets/results/LKflow_000045_10.png",
-                 "../datasets/results/LKflow_000157_10.png"]
+    img_paths = ["/Users/sergi/mcv-m6-2020-team5/datasets/results/LKflow_000045_10.png",
+                 "/Users/sergi/mcv-m6-2020-team5/datasets/results/LKflow_000157_10.png"]
     
-    gt_paths = ["../datasets/of_pred/noc_000045_10.png",
-                "../datasets/of_pred/noc_000157_10.png"]
+    gt_paths = ["/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/noc_000045_10.png",
+                "/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/noc_000157_10.png"]
     
-    real_paths = ["../datasets/of_pred/000045_10.png",
-                "../datasets/of_pred/000157_10.png"]
+    real_paths = ["/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/000045_10.png",
+                "/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/000157_10.png"]
     
     select_image = 1 #0: image 1, 1: image 2
     
@@ -48,7 +50,7 @@ def main():
     arrow_flow(flow_im,real_im)
     
     ##metrics
-    msen, pepn = flowmetrics(flow_im, flow_gt)
+    msen, pepn = flowmetrics(flow_im, flow_gt, val_gt_flow)
     
     print('MSEN')
     print(msen)
@@ -57,5 +59,3 @@ def main():
     
 
 
-if __name__ == "__main__":
-    main()

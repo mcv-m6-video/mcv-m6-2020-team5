@@ -17,6 +17,13 @@ from display import print_func
 
 from config import general as gconf
 
+from sklearn import svm, datasets
+from sklearn.model_selection import ParameterGrid
+import numpy as np
+
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
 SOURCE = "../datasets/AICity_data/train/S03/c010/vdo.avi"
 
 detectors = {"gt_noise":dts.gt_predict,
@@ -24,11 +31,14 @@ detectors = {"gt_noise":dts.gt_predict,
              "ssd":  dts.ssd_predict,
              "rcnn": dts.rcnn_predict}
 
-def main():
+parameters = {'rho': [0], 
+              'alpha':[1,2,3,4,5,6]}
+
+def gridSearch(rho,alpha):
     INIT_AT = 535 # where to init computing IoU and mAP, after training the background
     STOP_AT = -1
-    RHO = 0 #If different than 0 then adaptive
-    ALPHA = 1.5 #Try for different values (2.5 should be good)
+    RHO = rho #If different than 0 then adaptive
+    ALPHA = alpha #Try for different values (2.5 should be good)
     DELETE_STATIC_OBJECTS = gconf.gtruth.static # True: deletes static objects from ground truth
 
     DETECTOR = "color_gauss_black_rem"
@@ -43,26 +53,12 @@ def main():
     bgsg_module = None
 
     if(DETECTOR in det_backgrounds):
-        mask_path = gconf.detector.mask if gconf.detector.activate_mask else ""
-        # bgsg_module = BGSTModule(bs_type = DETECTOR, scene_mask_path=mask_path)
         if (DETECTOR == "color_gauss_black_rem"):
-            bgsg_module = BGSTModule(bs_type = DETECTOR, 
-                                     rho = RHO, 
-                                     alpha = ALPHA, 
-                                     init_at = INIT_AT, 
-                                     color_space = cspace,
-                                     scene_mask_path=mask_path)
+            bgsg_module = BGSTModule(bs_type = DETECTOR, rho = RHO, alpha = ALPHA, init_at = INIT_AT, color_space = cspace)
         elif (DETECTOR == "gauss_black_rem"):
-            bgsg_module = BGSTModule(bs_type = DETECTOR, 
-                                     rho = RHO, alpha = ALPHA, 
-                                     init_at = INIT_AT, 
-                                     color_space = schannel,
-                                     scene_mask_path=mask_path)
+            bgsg_module = BGSTModule(bs_type = DETECTOR, rho = RHO, alpha = ALPHA, init_at = INIT_AT, color_space = schannel)
         else:
-            bgsg_module = BGSTModule(bs_type = DETECTOR, 
-                                     rho = RHO, alpha = ALPHA, 
-                                     init_at = INIT_AT,
-                                     scene_mask_path=mask_path)
+            bgsg_module = BGSTModule(bs_type = DETECTOR, rho = RHO, alpha = ALPHA, init_at = INIT_AT)
         f = bgsg_module.get_contours
         for d in det_backgrounds:
             detectors[d] = f
@@ -91,8 +87,7 @@ def main():
         ret, frame = cap.read()
         if ret == True:
             #predict over the frame
-            print("Frame: ", i)
-            cv2.imwrite("test.png", frame)
+            # print("Frame: ", i)
             # rects = detect_func(frame)
             
             #Retrack over the frame
@@ -141,5 +136,38 @@ def main():
     
     
 if __name__ == "__main__":
-    main()
     
+    grid = ParameterGrid(parameters)
+    X = []
+    Y = []
+    Z = []
+    n = 0
+    for params in grid:
+        print("Params: ", params)
+        avg_precision = gridSearch(params['rho'], params['alpha'])
+        Z.append(avg_precision)
+        X.append(params['rho'])
+        Y.append(params['alpha'])
+        n += 1
+    
+    # # Plot the 3d surface (rho-alpha-map)
+    
+    # fig = plt.figure()
+    # ax = plt.axes(projection="3d")
+    
+    # # ax.plot_wireframe(X, Y, Z, color='green')
+    # ax.set_xlabel('rho')
+    # ax.set_ylabel('alpha')
+    # ax.set_zlabel('mAP')
+    # ax.plot_surface(X, Y, Z, rstride=1, cstride=1,
+    #                 cmap='viridis', edgecolor='none')
+    # ax.set_title('Grid Search')
+    
+    # plt.show()
+    
+    
+    # Write the values into a file (rho-alpha-map)
+    
+    with open('gridsearchtask1.txt', 'w') as f:
+        for (rho,alpha,avg_prec) in zip(X,Y,Z):
+            f.write("{0},{1},{2}\n".format(rho,alpha,avg_prec))

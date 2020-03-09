@@ -7,6 +7,8 @@ Created on Sat Feb 29 17:35:28 2020
 import numpy as np
 import xmltodict
 from scipy.stats import truncnorm
+from metrics.mAP import IoU
+import copy
 
 ANN_PER_FRAME = None
 _FRAME_ID = 0
@@ -45,6 +47,50 @@ def obtain_gt(src=None):
             frame_list[f_id].append(area)
     
     return frame_list
+
+def obtain_gt_without_static(src=None):
+    global SOURCE
+    src = src if src is not None else SOURCE
+    
+    # Read file
+    with open(src, "rb") as fd:
+        gdict = xmltodict.parse(fd)
+    frame_list = {}
+    for track in gdict["annotations"]["track"]:
+        # t_id = track["@id"]
+        for box in track["box"]:
+            f_id = box["@frame"]
+            
+            if(f_id not in frame_list):
+                frame_list[f_id] = []
+            # f_dict[t_id] = {}
+            # tmp_fd = f_dict[t_id]
+            area = (float(box["@xtl"]), 
+                    float(box["@ytl"]),
+                    float(box["@xbr"]), 
+                    float(box["@ybr"]))
+            frame_list[f_id].append(area)
+    
+    # Delete static boxes
+    # frame_list_without_static = frame_list.copy()
+    frame_list_without_static = copy.deepcopy(frame_list)
+ 
+    num_frames = np.arange(len(frame_list))
+    for frame in num_frames:
+        if frame != 0:
+            last_frame = frame_list[str(frame-1)]
+            current_frame = frame_list_without_static[str(frame)]
+            num_boxes = np.arange(len(last_frame))
+            for idx in num_boxes:
+                box = last_frame[idx][0:4]
+                # Find boxes where IoU is 1 between last frame and current frame
+                IoU_list = [IoU(box, current_frame[i]) for i in range(len(current_frame))]
+                idx_max = np.where(np.array(IoU_list) == 1)
+                if len(idx_max[0]) != 0:
+                    for static_box in idx_max[0]:
+                        del frame_list_without_static[str(frame)][static_box]
+
+    return frame_list_without_static   
         
 def predict(frame):
     global ANN_PER_FRAME
