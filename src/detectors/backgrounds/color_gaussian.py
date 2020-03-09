@@ -64,7 +64,7 @@ class color_gausian_back_remov(object):
             frame = cv2.cvtColor(frame, cv2.BGR2Luv)
         elif self.color_space == 'HLS':
             frame = cv2.cvtColor(frame, cv2.BGR2HLS)
-        elif self.color_space == 'YUB':
+        elif self.color_space == 'YUV':
             frame = cv2.cvtColor(frame, cv2.BGR2YUV)
         else:
             raise ValueError("The color space is not valid. Choose a valid color space to work with the single color gaussina model")

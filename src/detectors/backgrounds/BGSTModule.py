@@ -16,7 +16,7 @@ from .color_gaussian import color_gausian_back_remov
 cv2mag, cv2med, cv3min = cv2.__version__.split(".")
 
 class BGSTModule(object):
-    def __init__(self, downsample=1, scene_mask_path="", bs_type = "MOG2",history = 1000, varThreshold=30, detectShadows=True,rho=0, alpha=1, trigger=0, init_at = 535, *args, **kwargs):
+    def __init__(self, downsample=1, scene_mask_path="", bs_type = "MOG2",history = 1000, varThreshold=30, detectShadows=True,rho=0, alpha=1, trigger=0, init_at = 535, color_space = 'GRAY',*args, **kwargs):
         
         # super(BGSGThread, self).__init__(img_buffer, *args, **kwargs)
         
@@ -35,6 +35,8 @@ class BGSTModule(object):
         
         self.scene_mask = None
         self.fgbg = None
+        
+        self.color_space = color_space
         
         
         self.kern3 = None
@@ -78,7 +80,7 @@ class BGSTModule(object):
         elif(self.bs_type == "gauss_black_rem"):
             self.fgbg = gausian_back_remov(self.rho, self.alpha, self.init_at)        
         elif(self.bs_type == "color_gauss_black_rem"):
-            self.fgbg = color_gausian_back_remov(self.rho, self.alpha, self.init_at)
+            self.fgbg = color_gausian_back_remov(self.rho, self.alpha, self.init_at, self.color_space)
         # elif(self.bs_type == "Subsense"):
         #     self.fgbg = Subsense()
         # elif(self.bs_type == "Lobster"):

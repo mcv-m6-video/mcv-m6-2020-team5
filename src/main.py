@@ -31,16 +31,24 @@ def main():
     ALPHA = 1.5 #Try for different values (2.5 should be good)
 
     DETECTOR = "color_gauss_black_rem"
-    
     det_backgrounds = ["color_gauss_black_rem","gauss_black_rem", "MOG", "MOG2", "CNT", "GMG", "LSBP", "GSOC", "Subsense", "Lobster"]
+    
+    COLOR_SPACE = ['BGR','RGB','BGRA','RGBA','XYZ','YCBCR','HSV','LAB','LUV','HLS','YUV']
+    cspace = COLOR_SPACE[0]
+    
     bgsg_module = None
 
     if(DETECTOR in det_backgrounds):
-        bgsg_module = BGSTModule(bs_type = DETECTOR, rho = RHO, alpha = ALPHA, init_at = INIT_AT)
+        if (DETECTOR == "color_gauss_black_rem"):
+            bgsg_module = BGSTModule(bs_type = DETECTOR, rho = RHO, alpha = ALPHA, init_at = INIT_AT, color_space = cspace)
+        else:
+            bgsg_module = BGSTModule(bs_type = DETECTOR, rho = RHO, alpha = ALPHA, init_at = INIT_AT)
         f = bgsg_module.get_contours
         for d in det_backgrounds:
             detectors[d] = f
-        
+            
+    
+    
     cap = cv2.VideoCapture(SOURCE)
     # cap.set(cv2.CAP_PROP_POS_FRAMES,1450)
     # ret, frame = cap.read()
