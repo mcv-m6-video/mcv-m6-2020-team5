@@ -34,9 +34,9 @@ detectors = {"gt_noise":dts.gt_predict,
 parameters = {'rho': [0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.5], 
               'alpha':[0.2, 0.5, 0.7, 1, 1.5, 2, 2.5, 3, 4, 5, 6]}
 
-def main(rho,alpha):
-    INIT_AT = 125
-    STOP_AT = 500
+def gridSearch(rho,alpha):
+    INIT_AT = 535
+    STOP_AT = 2140
 
     DETECTOR = "gauss_black_rem"
     
@@ -124,7 +124,7 @@ if __name__ == "__main__":
     n = 0
     for params in grid:
         print("Params: ", params)
-        avg_precision = main(params['rho'], params['alpha'])
+        avg_precision = gridSearch(params['rho'], params['alpha'])
         Z.append(avg_precision)
         X.append(params['rho'])
         Y.append(params['alpha'])

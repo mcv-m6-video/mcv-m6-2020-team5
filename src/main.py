@@ -7,7 +7,7 @@ Created on Sat Feb 29 16:03:07 2020
 import cv2
 import detectors as dts
 
-from detectors.gt_modifications import obtain_gt
+from detectors.gt_modifications import obtain_gt, obtain_gt_without_static
 from detectors.backgrounds import BGSTModule
 from metrics.mAP import getMetricsClass
 from metrics.graphs import LinePlot, iouFrame
@@ -29,6 +29,7 @@ def main():
     STOP_AT = -1
     RHO = 0 #If different than 0 then adaptive
     ALPHA = 1.5 #Try for different values (2.5 should be good)
+    DELETE_STATIC_OBJECTS = gconf.gtruth.static # True: deletes static objects from ground truth
 
     DETECTOR = "color_gauss_black_rem"
     det_backgrounds = ["color_gauss_black_rem","gauss_black_rem", "MOG", "MOG2", "CNT", "GMG", "LSBP", "GSOC", "Subsense", "Lobster"]
@@ -57,7 +58,11 @@ def main():
     cap = cv2.VideoCapture(SOURCE)
     # cap.set(cv2.CAP_PROP_POS_FRAMES,1450)
     # ret, frame = cap.read()
-    gt_frames = obtain_gt(train_frames = INIT_AT)
+    if DELETE_STATIC_OBJECTS:
+        gt_frames = obtain_gt_without_static()
+    else:
+        gt_frames = obtain_gt()
+        
     i = 0
     avg_precision = []
     iou_history = []
@@ -95,9 +100,9 @@ def main():
 
             # if i == 500:
                 # iouFrame(iou_history)
-            #iou_plot.update(iou_frame)
+            # iou_plot.update(iou_frame)
 
-            #mAP_plot.update(avg_precision_frame)
+            # mAP_plot.update(avg_precision_frame)
             
             #Print Results
             ## prepare data
@@ -105,12 +110,12 @@ def main():
             bgseg = None if bgsg_module is None else bgsg_module.get_bgseg()
             orig_bgseg = None if bgsg_module is None else bgsg_module.get_orig_bgseg()
 
-            #frame = print_func(frame.copy(), gt_rects, dt_rects, bgseg, orig_bgseg, gconf.pout)
-            #cv2.imshow('Frame',frame)
+            frame = print_func(frame.copy(), gt_rects, dt_rects, bgseg, orig_bgseg, gconf.pout)
+            cv2.imshow('Frame',frame)
             
             # Press Q on keyboard to  exit
-            #if cv2.waitKey(25) & 0xFF == ord('q'):
-                #break
+            if cv2.waitKey(25) & 0xFF == ord('q'):
+                break
             i+=1
         # Break the loop
         else:

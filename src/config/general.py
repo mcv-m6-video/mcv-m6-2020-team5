@@ -37,3 +37,6 @@ plots.iou.max_val = 300
 
 detector = AttrDict()
 detector.type = "MOG"
+
+gtruth = AttrDict()
+gtruth.static = True
