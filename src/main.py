@@ -36,11 +36,16 @@ def main():
     COLOR_SPACE = ['BGR','RGB','BGRA','RGBA','XYZ','YCBCR','HSV','LAB','LUV','HLS','YUV']
     cspace = COLOR_SPACE[0]
     
+    SINGLE_CHANNEL = ['GRAY','HUE','L','Y','SATURATION'] #Añadir más
+    schannel = SINGLE_CHANNEL[0]
+    
     bgsg_module = None
 
     if(DETECTOR in det_backgrounds):
         if (DETECTOR == "color_gauss_black_rem"):
             bgsg_module = BGSTModule(bs_type = DETECTOR, rho = RHO, alpha = ALPHA, init_at = INIT_AT, color_space = cspace)
+        elif (DETECTOR == "gauss_black_rem"):
+            bgsg_module = BGSTModule(bs_type = DETECTOR, rho = RHO, alpha = ALPHA, init_at = INIT_AT, color_space = schannel)
         else:
             bgsg_module = BGSTModule(bs_type = DETECTOR, rho = RHO, alpha = ALPHA, init_at = INIT_AT)
         f = bgsg_module.get_contours
@@ -52,7 +57,7 @@ def main():
     cap = cv2.VideoCapture(SOURCE)
     # cap.set(cv2.CAP_PROP_POS_FRAMES,1450)
     # ret, frame = cap.read()
-    gt_frames = obtain_gt()
+    gt_frames = obtain_gt(train_frames = INIT_AT)
     i = 0
     avg_precision = []
     iou_history = []
