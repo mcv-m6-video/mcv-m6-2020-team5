@@ -37,3 +37,5 @@ plots.iou.max_val = 300
 
 detector = AttrDict()
 detector.type = "MOG"
+detector.activate_mask = True
+detector.mask = "./img/scene_mask.png"

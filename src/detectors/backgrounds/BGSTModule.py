@@ -15,7 +15,7 @@ from .single_gaussian import gausian_back_remov
 cv2mag, cv2med, cv3min = cv2.__version__.split(".")
 
 class BGSTModule(object):
-    def __init__(self, downsample=1, scene_mask_path="", bs_type = "MOG2", \
+    def __init__(self, downsample=1, scene_mask_path=None, bs_type = "MOG2", \
                  history = 1000, varThreshold=30, detectShadows=True, \
                  trigger=0, *args, **kwargs):
         
@@ -31,6 +31,8 @@ class BGSTModule(object):
         self.detectShadows = detectShadows
         
         self.scene_mask = None
+
+        
         self.fgbg = None
         
         
@@ -47,18 +49,19 @@ class BGSTModule(object):
     def get_bgseg(self):
         return self.last_bgseg
     def initialization(self):
-        # scene_mask = cv2.imread(self.scene_mask_path,0)
-        
         d = self.d
-        self.scene_mask = None
-        if(not self.scene_mask_path == ""):
-            scene_mask = cv2.imread(self.scene_mask_path,0)
-            if(scene_mask is None):
-                msg = "Scene Mask could not be loaded!"
-                msg+= "\n    Path: {}".format(self.scene_mask_path)
-                msg+= "\n    Does OS find the file?:{}".format(os.path.isfile(self.scene_mask_path))
-                raise(IOError(msg))
-            self.scene_mask = scene_mask[0::d,0::d]
+        if(self.scene_mask_path is not None):
+            self.scene_mask = cv2.imread(self.scene_mask_path,0)
+            self.scene_mask = self.scene_mask[0::d,0::d]
+        # if(not self.scene_mask_path == ""):
+        #     scene_mask = cv2.imread(self.scene_mask_path,0)
+        #     if(scene_mask is None):
+        #         msg = "Scene Mask could not be loaded!"
+        #         msg+= "\n    Path: {}".format(self.scene_mask_path)
+        #         msg+= "\n    Does OS find the file?:{}".format(os.path.isfile(self.scene_mask_path))
+        #         raise(IOError(msg))
+            self.scene_mask = self.scene_mask[0::d,0::d]
+            self.scene_mask = 255-self.scene_mask
         if(self.bs_type == "MOG"):
             self.fgbg = cv2.bgsegm.createBackgroundSubtractorMOG(history=100)
         elif(self.bs_type == "MOG2"):
@@ -107,7 +110,6 @@ class BGSTModule(object):
         morph = cv2.morphologyEx(morph, cv2.MORPH_OPEN,  self.kern2)
         morph = cv2.morphologyEx(morph, cv2.MORPH_CLOSE, self.kern3)
         # cv2.imshow("blur frame", dframe)
-        cv2.imshow("bgsg test", morph)
         binary = cv2.bitwise_and(morph,morph)
         self.last_bgseg = binary
         if(int(cv2mag) > 3):

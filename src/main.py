@@ -27,12 +27,13 @@ def main():
     INIT_AT = 125
     STOP_AT = 500
 
-    DETECTOR = "gauss_black_rem"
+    DETECTOR = "MOG2"
     
     det_backgrounds = ["gauss_black_rem", "MOG", "MOG2", "CNT", "GMG", "LSBP", "GSOC", "Subsense", "Lobster"]
     bgsg_module = None
     if(DETECTOR in det_backgrounds):
-        bgsg_module = BGSTModule(bs_type = DETECTOR)
+        mask_path = gconf.detector.mask if gconf.detector.activate_mask else ""
+        bgsg_module = BGSTModule(bs_type = DETECTOR, scene_mask_path=mask_path)
         f = bgsg_module.get_contours
         for d in det_backgrounds:
             detectors[d] = f
@@ -56,6 +57,7 @@ def main():
         if ret == True:
             #predict over the frame
             print("Frame: ", i)
+            cv2.imwrite("test.png", frame)
             # rects = detect_func(frame)
             
             #Retrack over the frame
