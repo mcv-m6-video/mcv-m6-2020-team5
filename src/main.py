@@ -25,17 +25,17 @@ detectors = {"gt_noise":dts.gt_predict,
              "rcnn": dts.rcnn_predict}
 
 def main():
-    INIT_AT = 125 # where to init computing IoU and mAP, after training the background
-    STOP_AT = 500
-    RHO = 0.01
-    ALPHA = 1
+    INIT_AT = 535 # where to init computing IoU and mAP, after training the background
+    STOP_AT = -1
+    RHO = 0 #If different than 0 then adaptive
+    ALPHA = 1.5 #Try for different values (2.5 should be good)
 
     DETECTOR = "gauss_black_rem"
     
     det_backgrounds = ["gauss_black_rem", "MOG", "MOG2", "CNT", "GMG", "LSBP", "GSOC", "Subsense", "Lobster"]
-    bgsg_module = None
+    bgsg_module =  None
     if(DETECTOR in det_backgrounds):
-        bgsg_module = BGSTModule(bs_type = DETECTOR, rho = RHO, alpha = ALPHA)
+        bgsg_module = BGSTModule(bs_type = DETECTOR, rho = RHO, alpha = ALPHA, init_at = INIT_AT)
         f = bgsg_module.get_contours
         for d in det_backgrounds:
             detectors[d] = f
@@ -80,9 +80,9 @@ def main():
 
             # if i == 500:
                 # iouFrame(iou_history)
-            # iou_plot.update(iou_frame)
+            #iou_plot.update(iou_frame)
 
-            # mAP_plot.update(avg_precision_frame)
+            #mAP_plot.update(avg_precision_frame)
             
             #Print Results
             ## prepare data
@@ -90,12 +90,12 @@ def main():
             bgseg = None if bgsg_module is None else bgsg_module.get_bgseg()
             orig_bgseg = None if bgsg_module is None else bgsg_module.get_orig_bgseg()
 
-            frame = print_func(frame.copy(), gt_rects, dt_rects, bgseg, orig_bgseg, gconf.pout)
-            cv2.imshow('Frame',frame)
+            #frame = print_func(frame.copy(), gt_rects, dt_rects, bgseg, orig_bgseg, gconf.pout)
+            #cv2.imshow('Frame',frame)
             
             # Press Q on keyboard to  exit
-            if cv2.waitKey(25) & 0xFF == ord('q'):
-                break
+            #if cv2.waitKey(25) & 0xFF == ord('q'):
+                #break
             i+=1
         # Break the loop
         else:

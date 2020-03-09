@@ -6,7 +6,7 @@ import cv2
 
 
 class gausian_back_remov(object):
-    def __init__(self, rho, alpha, thr_n_trainings=125):
+    def __init__(self, rho, alpha, thr_n_trainings=535):
         self.mean_image = None
         self.variance_image = None
         self.rho = rho

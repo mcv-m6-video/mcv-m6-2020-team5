@@ -15,9 +15,7 @@ from .single_gaussian import gausian_back_remov
 cv2mag, cv2med, cv3min = cv2.__version__.split(".")
 
 class BGSTModule(object):
-    def __init__(self, downsample=1, scene_mask_path="", bs_type = "MOG2", \
-                 history = 1000, varThreshold=30, detectShadows=True, \
-                 rho=0, alpha=1, trigger=0, *args, **kwargs):
+    def __init__(self, downsample=1, scene_mask_path="", bs_type = "MOG2",history = 1000, varThreshold=30, detectShadows=True,rho=0, alpha=1, trigger=0, init_at = 535, *args, **kwargs):
         
         # super(BGSGThread, self).__init__(img_buffer, *args, **kwargs)
         
@@ -27,6 +25,8 @@ class BGSTModule(object):
         self.bs_type = bs_type
         self.rho = rho
         self.alpha = alpha
+        
+        self.init_at = init_at
         
         self.history = history
         self.varThreshold = varThreshold
@@ -75,11 +75,11 @@ class BGSTModule(object):
         elif(self.bs_type == "GSOC"):
             self.fgbg = cv2.bgsegm.createBackgroundSubtractorGSOC()
         elif(self.bs_type == "gauss_black_rem"):
-            self.fgbg = gausian_back_remov(self.rho, self.alpha)
-        # elif(self.bs_type == "Subsense"):
-        #     self.fgbg = Subsense()
-        # elif(self.bs_type == "Lobster"):
-        #     self.fgbg = Lobster()
+            self.fgbg = gausian_back_remov(self.rho, self.alpha, self.init_at)
+        #elif(self.bs_type == "Subsense"):
+            #self.fgbg = Subsense()
+        #elif(self.bs_type == "Lobster"):
+            #self.fgbg = Lobster()
             
             
         self.kern1 = np.ones((5,5),np.uint8)
