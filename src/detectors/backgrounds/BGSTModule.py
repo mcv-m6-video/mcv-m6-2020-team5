@@ -76,21 +76,13 @@ class BGSTModule(object):
         elif(self.bs_type == "GSOC"):
             self.fgbg = cv2.bgsegm.createBackgroundSubtractorGSOC()
         elif(self.bs_type == "gauss_black_rem"):
-<<<<<<< HEAD
-            self.fgbg = gausian_back_remov(self.rho, self.alpha, self.init_at)
-        #elif(self.bs_type == "Subsense"):
-            #self.fgbg = Subsense()
-        #elif(self.bs_type == "Lobster"):
-            #self.fgbg = Lobster()
-=======
-            self.fgbg = gausian_back_remov(self.rho, self.alpha)
+            self.fgbg = gausian_back_remov(self.rho, self.alpha, self.init_at)        
         elif(self.bs_type == "color_gauss_black_rem"):
-            self.fgbg = color_gausian_back_remov(self.rho, self.alpha)
+            self.fgbg = color_gausian_back_remov(self.rho, self.alpha, self.init_at)
         # elif(self.bs_type == "Subsense"):
         #     self.fgbg = Subsense()
         # elif(self.bs_type == "Lobster"):
         #     self.fgbg = Lobster()
->>>>>>> 53ffe03f38e6806032681e250c41a0f0f9e9412c
             
             
         self.kern1 = np.ones((5,5),np.uint8)

@@ -6,7 +6,7 @@ import cv2
 
 
 class color_gausian_back_remov(object):
-    def __init__(self, rho, alpha, thr_n_trainings=125):
+    def __init__(self, rho, alpha, thr_n_trainings=125, color_space = 'RGB'):
         self.mean_image = None
         self.variance_image = None
         self.rho = rho
@@ -15,6 +15,7 @@ class color_gausian_back_remov(object):
         self.thr_n_of_training = thr_n_trainings
         self.trained = False
         self.tmp_train_frames = []
+        self.color_space = color_space
         
     def train(self,training_frames):
         if(len(training_frames) <= 0):
@@ -42,6 +43,31 @@ class color_gausian_back_remov(object):
         if(self.mean_image is None or self.variance_image is None):
             raise ValueError("The background model is not correctly initializated \
                                 the train function must be called to do so")
+        
+        if self.color_space == 'RGB':
+            frame = cv2.cvtColor(frame, cv2.BGR2RGB)
+        elif self.color_space == 'BGR':
+            frame = frame
+        elif self.color_space == 'BGRA':
+            frame = cv2.cvtColor(frame, cv2.BGR2BGRA)
+        elif self.color_space == 'RGBA':
+            frame = cv2.cvtColor(frame, cv2.BGR2RBGA)
+        elif self.color_space == 'XYZ':
+            frame = cv2.cvtColor(frame, cv2.BGR2XYZ)
+        elif self.color_space == 'YCBCR':
+            frame = cv2.cvtColor(frame, cv2.BGR2YCrCb)
+        elif self.color_space == 'HSV':
+            frame = cv2.cvtColor(frame, cv2.BGR2HSV)
+        elif self.color_space == 'LAB':
+            frame = cv2.cvtColor(frame, cv2.BGR2Lab)
+        elif self.color_space == 'LUV':
+            frame = cv2.cvtColor(frame, cv2.BGR2Luv)
+        elif self.color_space == 'HLS':
+            frame = cv2.cvtColor(frame, cv2.BGR2HLS)
+        elif self.color_space == 'YUB':
+            frame = cv2.cvtColor(frame, cv2.BGR2YUV)
+        else:
+            raise ValueError("The color space is not valid. Choose a valid color space to work with the single color gaussina model")
         
         # we check both sides of the gaussian to see if it's inside
         positive_variance = frame <(self.mean_image+self.alpha*(self.variance_image+2)) 
