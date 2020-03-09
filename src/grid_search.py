@@ -31,8 +31,10 @@ detectors = {"gt_noise":dts.gt_predict,
              "ssd":  dts.ssd_predict,
              "rcnn": dts.rcnn_predict}
 
-parameters = {'rho': [0], 
+parameters = {'rho': [0.05,0.1,0.2,0.3,0.4,0.5], 
               'alpha':[1,2,3,4,5,6]}
+# parameters = {'rho': [0.05], 
+#               'alpha':[4]}
 
 def gridSearch(rho,alpha):
     INIT_AT = 535 # where to init computing IoU and mAP, after training the background
@@ -41,7 +43,7 @@ def gridSearch(rho,alpha):
     ALPHA = alpha #Try for different values (2.5 should be good)
     DELETE_STATIC_OBJECTS = gconf.gtruth.static # True: deletes static objects from ground truth
 
-    DETECTOR = "color_gauss_black_rem"
+    DETECTOR = "gauss_black_rem"
     det_backgrounds = ["color_gauss_black_rem","gauss_black_rem", "MOG", "MOG2", "CNT", "GMG", "LSBP", "GSOC", "Subsense", "Lobster"]
     
     COLOR_SPACE = ['BGR','RGB','BGRA','RGBA','XYZ','YCBCR','HSV','LAB','LUV','HLS','YUV']
@@ -133,6 +135,7 @@ def gridSearch(rho,alpha):
     print("mIoU for all the video: ", np.mean(iou_history))
     print("mAP for all the video: ", np.mean(avg_precision))
     cap.release()
+    return np.mean(avg_precision)
     
     
 if __name__ == "__main__":
