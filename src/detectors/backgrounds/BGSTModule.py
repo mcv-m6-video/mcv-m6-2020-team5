@@ -107,7 +107,7 @@ class BGSTModule(object):
         res[res<127] = 0
         res[res>=127] = 255
         
-        cv2.imshow("mask direct", res)
+        # cv2.imwrite("plots/res.png", res)
         
         self.orig_bgseg = res
         
@@ -116,7 +116,7 @@ class BGSTModule(object):
         morph = cv2.morphologyEx(morph, cv2.MORPH_OPEN,  self.kern2)
         morph = cv2.morphologyEx(morph, cv2.MORPH_CLOSE, self.kern3)
         # cv2.imshow("blur frame", dframe)
-        # cv2.imshow("bgsg test", morph)
+        # cv2.imwrite("plots/morph.png", morph)
         binary = cv2.bitwise_and(morph,morph)
         self.last_bgseg = binary
         if(int(cv2mag) > 3):

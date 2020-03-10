@@ -12,9 +12,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pathlib
 import cv2
+import scipy.interpolate as interp
+from mpl_toolkits.mplot3d import Axes3D
 
 class LinePlot(object):
-    def __init__(self,plot_name, max_val = 300, save_plots=False,dir_save="./plots"):
+    def __init__(self,plot_name, max_val = 300, save_plots=False,dir_save="./plots",
+                 make_video = True):
         self.line = None
         self.fig = plt.figure(plot_name)
         plt.ion()
@@ -23,6 +26,8 @@ class LinePlot(object):
         self.line = None
         self.ax.set_ylim(0,1)
         self.ax.set_xlim(0,max_val)
+        plt.xlabel("frame")
+        plt.ylabel("IoU")
         # plt.xlim(auto=True)
         self.idx = 0
         self._y_data = [np.nan] * max_val
@@ -32,6 +37,7 @@ class LinePlot(object):
         if(save_plots):
             self.folder_name = f"{dir_save}/{plot_name}/"
             pathlib.Path(self.folder_name).mkdir(parents=True, exist_ok=True)
+        self.last_img = None
     def update(self, new_line):
         if self.idx >= self.max_val:
             self._y_data.pop(0)
@@ -56,14 +62,21 @@ class LinePlot(object):
         self.fig.canvas.draw()
         plt.pause(0.001)
         self.idx+=1
+    def build_frame(self, frame):
+        w,h = self.fig.canvas.get_width_height()
+        buf = np.fromstring(self.fig.canvas.tostring_argb(), dtype=np.uint8 )
+        buf.shape = (h, w, 4)
+        f_figure_im = obtain_frame_and_figure(buf, frame)
+        self.last_img = f_figure_im
     def save_plot(self, frame=None):
         fname = f'{self.folder_name}{self.idx:4d}.jpg'
         if(frame is not None):
-            w,h = self.fig.canvas.get_width_height()
-            buf = np.fromstring(self.fig.canvas.tostring_argb(), dtype=np.uint8 )
-            buf.shape = (h, w, 4)
-            f_figure_im = obtain_frame_and_figure(buf, frame)
-            cv2.imwrite(fname,f_figure_im, [int(cv2.IMWRITE_JPEG_QUALITY), 70])
+            self.build_frame(frame)
+            # w,h = self.fig.canvas.get_width_height()
+            # buf = np.fromstring(self.fig.canvas.tostring_argb(), dtype=np.uint8 )
+            # buf.shape = (h, w, 4)
+            # f_figure_im = obtain_frame_and_figure(buf, frame)
+            cv2.imwrite(fname,self.last_img, [int(cv2.IMWRITE_JPEG_QUALITY), 70])
         else:
             self.fig.savefig(fname)
 def iouFrame(iou):
@@ -77,8 +90,35 @@ def obtain_frame_and_figure(figure_im, frame):
     iw_final = int(iw*(fh/ih))
     
     f_figure_im = cv2.resize(figure_im, (iw_final, fh))
-    f_figure_im = f_figure_im[:,:,:3]
+    f_figure_im = f_figure_im[:,:,(3,2,1)]
+    # f_figure_im = f_figure_im[:,:,:3]
     final_figure = np.hstack((f_figure_im, frame))
-    cv2.imshow("test", final_figure)
     return final_figure
 
+def plot_3d_surface(X, Y, Z):
+
+    plotx,ploty, = np.meshgrid(np.linspace(np.min(X),np.max(X),10),\
+                            np.linspace(np.min(Y),np.max(Y),10))
+    plotz = interp.griddata((X,Y),Z,(plotx,ploty),method='linear')
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot_surface(plotx,ploty,plotz,cstride=1,rstride=1,cmap='viridis') 
+    plt.xlabel("Rho")
+    plt.ylabel("Alpha")
+    plt.title("mAP")
+    plt.show()
+        
+if __name__ == "__main__":
+    X = []
+    Y = []
+    Z = []
+    with open('gridsearch.txt', 'r') as f:
+        for line in f:
+            fields = line.split(",")
+            X.append(float(fields[0]))
+            Y.append(float(fields[1]))
+            Z.append(float(fields[2]))
+    
+    plot_3d_surface(X,Y,Z)
+    

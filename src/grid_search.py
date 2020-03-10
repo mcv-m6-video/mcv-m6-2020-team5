@@ -31,8 +31,8 @@ detectors = {"gt_noise":dts.gt_predict,
              "ssd":  dts.ssd_predict,
              "rcnn": dts.rcnn_predict}
 
-parameters = {'rho': [0.05,0.1,0.2,0.3,0.4,0.5], 
-              'alpha':[1,2,3,4,5,6]}
+parameters = {'rho': [0.8], 
+              'alpha':[1]}
 # parameters = {'rho': [0.05], 
 #               'alpha':[4]}
 
@@ -66,7 +66,6 @@ def gridSearch(rho,alpha):
             detectors[d] = f
             
     
-    
     cap = cv2.VideoCapture(SOURCE)
     # cap.set(cv2.CAP_PROP_POS_FRAMES,1450)
     # ret, frame = cap.read()
@@ -88,42 +87,25 @@ def gridSearch(rho,alpha):
         # Capture frame-by-frame
         ret, frame = cap.read()
         if ret == True:
-            #predict over the frame
-            # print("Frame: ", i)
-            # rects = detect_func(frame)
-            
-            #Retrack over the frame
             
             #Classify the result
             dt_rects = detect_func(frame)
-
-            #Obtain GT
             
             #Compute the metrics
             avg_precision_frame, iou_frame = getMetricsClass(dt_rects, gt_frames[str(i)], nclasses=1)
             if i > INIT_AT:
                 avg_precision.append(avg_precision_frame)
                 iou_history.append(iou_frame)
-                iou_plot.update(iou_frame)
-            #Print Graph
-
-
-            
-
-            # if i == 500:
-                # iouFrame(iou_history)
-            # iou_plot.update(iou_frame)
-
-            # mAP_plot.update(avg_precision_frame)
+                # iou_plot.update(iou_frame)
             
             #Print Results
-            ## prepare data
+ 
             gt_rects = gt_frames[str(i)]
             bgseg = None if bgsg_module is None else bgsg_module.get_bgseg()
             orig_bgseg = None if bgsg_module is None else bgsg_module.get_orig_bgseg()
 
             frame = print_func(frame.copy(), gt_rects, dt_rects, bgseg, orig_bgseg, gconf.pout)
-            cv2.imshow('Frame',frame)
+            # cv2.imshow('Frame',frame)
             
             # Press Q on keyboard to  exit
             if cv2.waitKey(25) & 0xFF == ord('q'):
@@ -153,24 +135,8 @@ if __name__ == "__main__":
         Y.append(params['alpha'])
         n += 1
     
-    # # Plot the 3d surface (rho-alpha-map)
-    
-    # fig = plt.figure()
-    # ax = plt.axes(projection="3d")
-    
-    # # ax.plot_wireframe(X, Y, Z, color='green')
-    # ax.set_xlabel('rho')
-    # ax.set_ylabel('alpha')
-    # ax.set_zlabel('mAP')
-    # ax.plot_surface(X, Y, Z, rstride=1, cstride=1,
-    #                 cmap='viridis', edgecolor='none')
-    # ax.set_title('Grid Search')
-    
-    # plt.show()
-    
-    
     # Write the values into a file (rho-alpha-map)
     
-    with open('gridsearchtask1.txt', 'w') as f:
+    with open('gridsearchtask2.txt', 'w') as f:
         for (rho,alpha,avg_prec) in zip(X,Y,Z):
             f.write("{0},{1},{2}\n".format(rho,alpha,avg_prec))

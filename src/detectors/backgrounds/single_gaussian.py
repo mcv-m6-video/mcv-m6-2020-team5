@@ -66,7 +66,7 @@ class gausian_back_remov(object):
         is_foreground = np.logical_not(is_background)
         self.__update_mean_image(gray_frame,is_background,is_foreground)
         self.__update_variance_image(gray_frame,is_background,is_foreground)
-        
+        cv2.imwrite("plots/mean_image.png", self.mean_image)
         return (is_foreground*255).astype("uint8")
     
     
