@@ -7,6 +7,11 @@ Team 5
 - Richard Segovia: richardseba
 - Sergi Solà: sergiisolaa
 - Sergio Casas: sergiocasaspastor
+## Contributors
+
+| Dani Azemar | Richard Segovia |  Sergi Solà |   Sergio Casasa  |
+|-------------|-----------------|-------------|------------------|
+|  hamddan4   |   richardseba   | sergiisolaa | sergiocasaspastor|
 
 ## Week 1
 
