@@ -166,6 +166,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.general_config is not None:
         new_gconfig.extend(args.general_config)
-    print(new_gconfig)
     main(new_gconfig)
     
