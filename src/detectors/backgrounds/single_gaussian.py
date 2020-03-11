@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import pathlib
 import cv2
 
+MEAN_IMAGE = None
 
 class gausian_back_remov(object):
     def __init__(self, rho, alpha, thr_n_trainings=535, channel = 'GRAY'):
@@ -80,6 +81,8 @@ class gausian_back_remov(object):
         new_mean_image = background_mask*( (1-self.rho)*self.mean_image+self.rho*frame )
         new_mean_image = new_mean_image + foreground_mask*self.mean_image
         self.mean_image = new_mean_image
+        global MEAN_IMAGE
+        MEAN_IMAGE = self.mean_image
     
     def __update_variance_image(self,frame,background_mask,foreground_mask):
         new_variance = np.std(np.dstack((frame,self.mean_image)),axis=2)+2
@@ -89,6 +92,7 @@ class gausian_back_remov(object):
         new_variance_image = new_variance_image + foreground_mask*self.variance_image
         self.variance_image = new_variance_image
 
-        
-        
+def obtain_global_var_mean():
+    global MEAN_IMAGE
+    return np.dstack([MEAN_IMAGE]*3)
         

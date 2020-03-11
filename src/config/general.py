@@ -11,11 +11,11 @@ VISUALIZE = True
 
 video = AttrDict()
 video.save_video = True
-video.fname = 'output_pickup2.avi'
+video.fname = 'output_best_adaptative_mean.avi'
+video.fps = 30
 video.stack_iou = False
-video.start_save = 1700
-video.end_save = 2140
-
+video.start_save = 650
+video.duration = 3      #duration in seconds
 
 # PRINT CONFIGURATION
 pout = AttrDict()           #Print Out, to avoid re-declare "print" function
@@ -48,8 +48,8 @@ detector.type = "gauss_black_rem"       # Detector to use
 detector.activate_mask = False          # Whether or not to activate the mask to discard possible noise
 detector.mask = "./img/scene_mask.png"  # path to the mask
 detector.init_at = 535 # where to init computing IoU and mAP, after training the background
-detector.alpha = 4 #Try for different values (2.5 should be good)
-detector.rho = 0 #If different than 0 then adaptive
+detector.alpha = 5 #Try for different values (2.5 should be good)
+detector.rho = 0.01 #If different than 0 then adaptive
 
 
 gtruth = AttrDict()

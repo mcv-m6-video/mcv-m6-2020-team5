@@ -17,6 +17,7 @@ from display import print_func
 from line_arguments import general_parser
 
 from config.utils import obtain_general_config
+from detectors.backgrounds.single_gaussian import obtain_global_var_mean
 
 SOURCE = "../datasets/AICity_data/train/S03/c010/vdo.avi"
 
@@ -39,6 +40,7 @@ def main(new_config):
         cv2.namedWindow(w_name, cv2.WINDOW_AUTOSIZE)
     bgsg_module = None
     
+    VIDEO_END = gconf.video.start_save+gconf.video.fps*gconf.video.duration
     # cap.set(cv2.CAP_PROP_POS_FRAMES,1450)
     out_cap = None
 
@@ -86,7 +88,8 @@ def main(new_config):
     # mAP_plot = LinePlot("mAP_frame",max_val=350)
     detect_func = detectors[_detcr]
     
-    while(cap.isOpened() and (gconf.STOP_AT == -1 or i <= gconf.STOP_AT)):
+    while(cap.isOpened() and (not gconf.video.save_video and (gconf.STOP_AT == -1 or i <= gconf.STOP_AT) or
+                              gconf.video.save_video and i <= VIDEO_END)):
         # Capture frame-by-frame
         ret, frame = cap.read()
         if ret == True:
@@ -128,11 +131,13 @@ def main(new_config):
             frame = print_func(frame.copy(), gt_rects, dt_rects, bgseg, orig_bgseg, gconf.pout)
             # cv2.imshow('Frame',frame)
             if i > gconf.detector.init_at:
+                
                 f_out = frame 
+                # f_out = obtain_global_var_mean()
                 cv2.putText(frame, f"alpha={gconf.detector.alpha}",
                             (50,50), cv2.FONT_HERSHEY_SIMPLEX, 
                             2,(255,255,255),6,cv2.LINE_AA)
-                if(gconf.video.start_save <= i <= gconf.video.end_save):
+                if(gconf.video.start_save <= i <= VIDEO_END):
                     if(gconf.video.stack_iou):
                         iou_plot.build_frame(frame)
                     if(gconf.video.save_video):
@@ -140,12 +145,15 @@ def main(new_config):
                             if(gconf.video.stack_iou):
                                 fshape = iou_plot.last_img.shape
                             else:
-                                fshape = frame.shape
-                            out_cap = cv2.VideoWriter(gconf.video.fname, cv2.VideoWriter_fourcc(*"MJPG"), 30, (fshape[1],fshape[0]))
+                                fshape = f_out.shape
+                            out_cap = cv2.VideoWriter(gconf.video.fname, 
+                                                      cv2.VideoWriter_fourcc(*"MJPG"), 
+                                                      gconf.video.fps, 
+                                                      (fshape[1],fshape[0]))
                     if(gconf.video.stack_iou):
                         f_out = iou_plot.last_img
                     out_cap.write(f_out.astype('uint8'))
-                cv2.imshow(w_name, f_out)
+                cv2.imshow(w_name, f_out.astype('uint8'))
             
             # Press Q on keyboard to  exit
             if cv2.waitKey(1) & 0xFF == ord('q'):

@@ -2,6 +2,9 @@ datasets
 src/plots
 
 *.avi
+*.mp4
+*.m4v
+
 *.png
 *.jpeg
 *.jpg
