@@ -16,13 +16,12 @@ from .color_gaussian import color_gausian_back_remov
 cv2mag, cv2med, cv3min = cv2.__version__.split(".")
 
 class BGSTModule(object):
-<<<<<<< HEAD
-    def __init__(self, downsample=1, scene_mask_path=None, bs_type = "MOG2", \
-                 history = 1000, varThreshold=30, detectShadows=True, \
-                 trigger=0, *args, **kwargs):
-=======
-    def __init__(self, downsample=1, scene_mask_path="", bs_type = "MOG2",history = 1000, varThreshold=30, detectShadows=True,rho=0, alpha=1, trigger=0, init_at = 535, color_space = 'GRAY',*args, **kwargs):
->>>>>>> 57064f8d249f488ccdf793d8686091076004a719
+    def __init__(self, downsample=1, scene_mask_path=None, bs_type = "MOG2",
+                 history = 1000, varThreshold=30, detectShadows=True,
+                 rho=0, alpha=1, 
+                 trigger=0, init_at = 535, color_space = 'GRAY', 
+                 *args, **kwargs):
+
         
         # super(BGSGThread, self).__init__(img_buffer, *args, **kwargs)
         
@@ -116,7 +115,7 @@ class BGSTModule(object):
         res[res<127] = 0
         res[res>=127] = 255
         
-        cv2.imshow("mask direct", res)
+        # cv2.imwrite("plots/res.png", res)
         
         self.orig_bgseg = res
         
@@ -124,7 +123,7 @@ class BGSTModule(object):
         morph = cv2.morphologyEx(morph, cv2.MORPH_CLOSE, self.kern1)
         morph = cv2.morphologyEx(morph, cv2.MORPH_OPEN,  self.kern2)
         morph = cv2.morphologyEx(morph, cv2.MORPH_CLOSE, self.kern3)
-        
+
         binary = cv2.bitwise_and(morph,morph)
         self.last_bgseg = binary
         if(int(cv2mag) > 3):

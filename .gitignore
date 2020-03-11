@@ -1,6 +1,11 @@
 datasets
 src/plots
 
+*.avi
+*.png
+*.jpeg
+*.jpg
+
 .vscode
 
 ########### GENERAL PYTHON FILES TO IGNORE ###########
