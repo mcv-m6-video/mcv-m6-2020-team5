@@ -21,6 +21,7 @@ from line_arguments import general_parser
 
 from config.utils import obtain_general_config
 from detectors.backgrounds.single_gaussian import obtain_global_var_mean
+from metrics.map_all_frames import calculate_ap
 
 SOURCE = "../datasets/AICity_data/train/S03/c010/vdo.avi"
 
@@ -40,6 +41,7 @@ def main(new_config):
     detect_func, bgsg_module = obtain_detector(**gconf.detector)
 
     gt_frames = obtain_gt(**gconf.gtruth, IoU_func=IoU)
+
         
     i = 0
     avg_precision = []
@@ -48,6 +50,7 @@ def main(new_config):
                         max_val=gconf.plots.iou.max_val,
                         save_plots=gconf.plots.iou.save)
     # mAP_plot = LinePlot("mAP_frame",max_val=350)
+    dt_rects_dict = {}
     
     
     while(cap.isOpened() and (not gconf.video.save_video and 
@@ -64,7 +67,7 @@ def main(new_config):
             
             #Classify the result
             dt_rects = detect_func(frame)
-
+            dt_rects_dict[str(i)] = dt_rects
             #Obtain GT
             
             #Compute the metrics
@@ -118,7 +121,8 @@ def main(new_config):
                                                       (fshape[1],fshape[0]))
                     if(gconf.video.stack_iou):
                         f_out = iou_plot.last_img
-                    out_cap.write(f_out.astype('uint8'))
+                    if(gconf.video.save_video):
+                        out_cap.write(f_out.astype('uint8'))
                 cv2.imshow(w_name, f_out.astype('uint8'))
             
             # Press Q on keyboard to  exit
@@ -128,10 +132,13 @@ def main(new_config):
         # Break the loop
         else:
             break
+
+    print("mAP_allframes: {}".format(calculate_ap(dt_rects_dict, gt_frames, 535, 2140, 'random')))
     print("mIoU for all the video: ", np.mean(iou_history))
     print("mAP for all the video: ", np.mean(avg_precision))
     cap.release()
-    out_cap.release()
+    if(gconf.video.save_video):
+        out_cap.release()
     
     
 if __name__ == "__main__":

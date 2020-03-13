@@ -82,7 +82,7 @@ def getMetrics(pred_bboxes, gt_bboxes, confidence=False, N=10, IoU_threshold=0.5
         aps.append(ap)
         
     avg_precision = np.mean(aps)
-    avg_iou = sum(iou) / len(iou)
+    avg_iou = np.mean(iou)
     
     return avg_precision, avg_iou
 

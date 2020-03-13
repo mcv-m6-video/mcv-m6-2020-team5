@@ -10,7 +10,7 @@ STOP_AT = -1
 VISUALIZE = True
 
 video = AttrDict()
-video.save_video = True
+video.save_video = False
 video.fname = 'output_best_adaptative_mean.avi'
 video.fps = 30
 video.stack_iou = False
