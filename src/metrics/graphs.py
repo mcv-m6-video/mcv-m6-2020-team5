@@ -24,6 +24,7 @@ class LinePlot(object):
         plt.show(block=False)
         self.ax = self.fig.add_subplot(111)
         self.line = None
+        self.mean_line = None
         self.ax.set_ylim(0,1)
         self.ax.set_xlim(0,max_val)
         plt.xlabel("frame")
@@ -31,6 +32,8 @@ class LinePlot(object):
         # plt.xlim(auto=True)
         self.idx = 0
         self._y_data = [np.nan] * max_val
+        self._y_data_mean = [np.nan] * max_val
+        self._y_mean_values = []
         self.max_val = max_val
         
         self.save_plots=save_plots
@@ -43,6 +46,12 @@ class LinePlot(object):
             self._y_data.pop(0)
             self._y_data.append(np.nan)
             self._y_data[-1] = new_line
+            # self._y_data.append(new_line)
+            
+            self._y_data_mean.pop(0)
+            self._y_data_mean.append(np.nan)
+            self._y_data_mean[-1] = np.mean(self._y_mean_values + [new_line]) 
+            self._y_mean_values.append(self._y_data_mean[-1])
             # self.ax.set_xlim(self.idx-self.max_val, self.idx)
             # self.ax.set_xticks()
             ticks = np.arange(0, self.max_val+1, 1)
@@ -53,11 +62,15 @@ class LinePlot(object):
             plt.xticks(ticks, labels)
         else:
             self._y_data[self.idx] = new_line
+            self._y_data_mean[self.idx] = np.mean(self._y_mean_values + [new_line]) 
+            self._y_mean_values.append(self._y_data_mean[self.idx])
         if self.line is None:
             self.line, = self.ax.plot(self._y_data)
+            self.mean_line, = self.ax.plot(self._y_data_mean, linestyle=":", color="green")
         else:
             # self.line.remove()
             self.line.set_ydata(self._y_data)
+            self.mean_line.set_ydata(self._y_data_mean)
         # self.line, = plt.plot(new_line)
         self.fig.canvas.draw()
         plt.pause(0.001)

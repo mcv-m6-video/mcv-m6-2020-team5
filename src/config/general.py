@@ -14,8 +14,8 @@ video = AttrDict()
 video.save_video = False
 video.fname = 'output_best_adaptative_mean.avi'
 video.fps = 30
-video.stack_iou = False
-video.start_save = 650
+video.stack_iou = True
+video.start_save = 3000
 video.duration = 3      #duration in seconds
 
 tracker = AttrDict()
@@ -67,6 +67,18 @@ detector.backgrounds.ours.single_channel = "GRAY"
 detector.detectron = AttrDict()
 detector.detectron.train_frames = 535
 detector.detectron.weights_path = WEIGHTS+"/detectron.weights"
+
+bbox_filter = AttrDict()
+bbox_filter.wf_high=0.4
+bbox_filter.hf_high=0.4
+bbox_filter.wf_low=0.005
+bbox_filter.hf_low=0.005 
+bbox_filter.min_size=0.0003
+bbox_filter.max_size=0.1
+bbox_filter.form_factor_low=0.2
+bbox_filter.form_factor_high=10
+
+
 
 gtruth = AttrDict()
 gtruth.src = None # No hace falta cambiar este parametro

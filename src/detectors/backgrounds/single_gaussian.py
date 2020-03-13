@@ -27,6 +27,18 @@ class gausian_back_remov(object):
         
         self.mean_image = np.mean(training_frames,axis=2)
         self.variance_image = np.std(training_frames,axis=2)
+    # def train(self,frame):
+          
+    #     # training_frames = self.__convert_array_to_gray(training_frames)
+    #     # We put the images into a stack so numpy operations are easier. Shape (w,h,n_frame)
+    #     # training_frames = np.stack(training_frames,axis=2)
+    #     gframe = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+    #     if(self.mean_image is None):
+    #         self.mean_image = np.zeros_like(gframe)
+    #     self.mean_image += np.divide(gframe, self.thr_n_of_training)
+        
+    #     # self.mean_image = np.mean(training_frames,axis=2)
+    #     self.variance_image = np.std(training_frames,axis=2)
         
     def apply(self,frame):
         if(self._n_of_trainings < self.thr_n_of_training):

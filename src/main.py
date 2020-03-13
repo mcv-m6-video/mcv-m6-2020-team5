@@ -22,6 +22,7 @@ from line_arguments import general_parser
 
 from config.utils import obtain_general_config
 from detectors.backgrounds.single_gaussian import obtain_global_var_mean
+from utils.bbfilters import bbfilters
 from metrics.map_all_frames import calculate_ap
 from tracking.trackers import obtain_tracker
 
@@ -68,6 +69,7 @@ def main(new_config):
             
             #Classify the result
             dt_rects = detect_func(frame)
+            dt_rects, _ = bbfilters(dt_rects, frame, **gconf.bbox_filter)
             dt_rects = tracker.update(dt_rects)
             dt_rects_dict[str(i)] = list(dt_rects.values())
             #Obtain GT
@@ -82,7 +84,7 @@ def main(new_config):
                 # iou_plot.update(iou_frame)
             #Print Graph
 
-
+            
             
 
             # if i > 1000:
