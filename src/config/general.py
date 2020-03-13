@@ -17,6 +17,13 @@ video.stack_iou = False
 video.start_save = 650
 video.duration = 3      #duration in seconds
 
+tracker = AttrDict()
+tracker.ttype = "centroid"
+tracker.centroid = AttrDict()
+tracker.centroid.maxDisappeared=5
+tracker.centroid.pix_tol=500
+tracker.centroid.status_save=False
+
 # PRINT CONFIGURATION
 pout = AttrDict()           #Print Out, to avoid re-declare "print" function
 pout.activate = True            # Whether activate or not prints
@@ -34,7 +41,9 @@ pout.bgseg_o = AttrDict()
 pout.bgseg_o.activate = True        # visualize original background segmentation?
 pout.bgseg_o.color = (0, 255, 255)  # color of original background segmentation
 pout.bgseg_o.alpha = 0.7            # alpha of original background segmentation
-
+pout.paths = AttrDict()
+pout.paths.activate = True
+pout.paths.color = (0, 255, 0)
 
 plots = AttrDict()
 plots.iou = AttrDict()
@@ -44,7 +53,7 @@ plots.iou.save = False              # Save every frame of the plot
 plots.iou.n_frames = 1              # Save every N frames
 
 detector = AttrDict()
-detector.dtype = "gauss_black_rem"       # Detector to use
+detector.dtype = "MOG"       # Detector to use
 detector.activate_mask = False          # Whether or not to activate the mask to discard possible noise
 detector.mask_path = "./img/scene_mask.png"  # path to the mask
 detector.backgrounds = AttrDict()
@@ -57,6 +66,7 @@ detector.backgrounds.ours.single_channel = "GRAY"
 
 gtruth = AttrDict()
 gtruth.src = None # No hace falta cambiar este parametro
-gtruth.include_static_iou = False #funcion del sergio para descartar IoU==1
+gtruth.include_static_iou = True #funcion del sergio para descartar IoU==1
 gtruth.include_parked = True    # descartamos aquellos que tienen el atributo parked = 1
 gtruth.include_occluded = True # descartamos aquellos que tienen el atributo occluded = "true"
+

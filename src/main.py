@@ -22,6 +22,7 @@ from line_arguments import general_parser
 from config.utils import obtain_general_config
 from detectors.backgrounds.single_gaussian import obtain_global_var_mean
 from metrics.map_all_frames import calculate_ap
+from tracking.trackers import obtain_tracker
 
 SOURCE = "../datasets/AICity_data/train/S03/c010/vdo.avi"
 
@@ -43,7 +44,7 @@ def main(new_config):
     gt_frames = obtain_gt(**gconf.gtruth, IoU_func=IoU)
 
         
-    i = 0
+    
     avg_precision = []
     iou_history = []
     iou_plot = LinePlot(gconf.plots.iou.name,
@@ -52,7 +53,8 @@ def main(new_config):
     # mAP_plot = LinePlot("mAP_frame",max_val=350)
     dt_rects_dict = {}
     
-    
+    tracker = obtain_tracker(gconf.tracker.ttype, gconf.tracker)
+    i = 0
     while(cap.isOpened() and (not gconf.video.save_video and 
                               (gconf.STOP_AT == -1 or i <= gconf.STOP_AT) or
                               gconf.video.save_video and i <= VIDEO_END)):
@@ -67,11 +69,12 @@ def main(new_config):
             
             #Classify the result
             dt_rects = detect_func(frame)
-            dt_rects_dict[str(i)] = dt_rects
+            dt_rects = tracker.update(dt_rects)
+            dt_rects_dict[str(i)] = list(dt_rects.values())
             #Obtain GT
             
             #Compute the metrics
-            avg_precision_frame, iou_frame = getMetricsClass(dt_rects, 
+            avg_precision_frame, iou_frame = getMetricsClass(list(dt_rects.values()), 
                                                              gt_frames[str(i)], 
                                                              nclasses=1)
             if i > gconf.detector.backgrounds.ours.init_at:
@@ -97,7 +100,7 @@ def main(new_config):
             orig_bgseg = None if bgsg_module is None else bgsg_module.get_orig_bgseg()
 
             frame = print_func(frame.copy(), gt_rects, dt_rects, bgseg, orig_bgseg, 
-                               gconf.pout)
+                               gconf.pout, tracker)
             # cv2.imshow('Frame',frame)
             if i > gconf.detector.backgrounds.ours.init_at:
                 

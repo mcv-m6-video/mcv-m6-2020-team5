@@ -44,8 +44,6 @@ def obtain_gt(src=None, include_parked=False, include_occluded=False,
             if(not include_parked and "attribute" in box.keys() and 
                box["attribute"]["#text"]=="true"):
                 continue
-            
-            
 
             # f_dict[t_id] = {}
             # tmp_fd = f_dict[t_id]

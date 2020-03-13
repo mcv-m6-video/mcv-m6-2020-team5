@@ -11,9 +11,9 @@ from .groundtruths import gt_predict, gt_yolo_predict, gt_ssd_predict, \
                          gt_rcnn_predict
 
 detectors_dict = {"gt_noise":gt_predict,
-             "yolo": gt_yolo_predict,
-             "ssd":  gt_ssd_predict,
-             "rcnn": gt_rcnn_predict}
+             "gt_yolo": gt_yolo_predict,
+             "gt_ssd":  gt_ssd_predict,
+             "gt_rcnn": gt_rcnn_predict}
 
 _DET_BACKGROUNDS = ["color_gauss_black_rem","gauss_black_rem", "MOG", "MOG2", 
                     "CNT", "GMG", "LSBP", "GSOC", "Subsense", "Lobster"]
@@ -25,6 +25,7 @@ _SINGLE_CHANNEL = ['GRAY','HUE','L','Y','SATURATION'] #Añadir más
 def obtain_bgseg_detector(dtype, activate_mask=True, mask_path=True, init_at=10, 
                           alpha=None, rho=None, color_space=None, single_channel=None):
     mask_path = mask_path if activate_mask else None
+    cspace = None
     if (dtype in ["color_gauss_black_rem", "gauss_black_rem"]):
         if(alpha is None or rho is None):
             raise(ValueError(f"Alpha and rho not set, got {alpha} and {rho} instead"))
@@ -50,6 +51,9 @@ def obtain_bgseg_detector(dtype, activate_mask=True, mask_path=True, init_at=10,
 def obtain_detector(dtype=None, activate_mask=None, 
                     mask_path=None, backgrounds = {}):
     bgsg_module = None
+    all_detector_names = _DET_BACKGROUNDS + list(detectors_dict.keys())
+    if(dtype not in all_detector_names):
+        raise(ValueError(f"Detector name '{dtype}' not recognized. Available: {all_detector_names}"))
     if(dtype in _DET_BACKGROUNDS):
         func_detector, bgsg_module = obtain_bgseg_detector(dtype, 
                                               activate_mask=activate_mask, mask_path=mask_path,
