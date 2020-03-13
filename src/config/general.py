@@ -44,13 +44,19 @@ plots.iou.save = False              # Save every frame of the plot
 plots.iou.n_frames = 1              # Save every N frames
 
 detector = AttrDict()
-detector.type = "gauss_black_rem"       # Detector to use
+detector.dtype = "gauss_black_rem"       # Detector to use
 detector.activate_mask = False          # Whether or not to activate the mask to discard possible noise
-detector.mask = "./img/scene_mask.png"  # path to the mask
-detector.init_at = 535 # where to init computing IoU and mAP, after training the background
-detector.alpha = 5 #Try for different values (2.5 should be good)
-detector.rho = 0.01 #If different than 0 then adaptive
-
+detector.mask_path = "./img/scene_mask.png"  # path to the mask
+detector.backgrounds = AttrDict()
+detector.backgrounds.ours = AttrDict()
+detector.backgrounds.ours.init_at = 10 # where to init computing IoU and mAP, after training the background
+detector.backgrounds.ours.alpha = 5 #Try for different values (2.5 should be good)
+detector.backgrounds.ours.rho = 0.01 #If different than 0 then adaptive
+detector.backgrounds.ours.color_space ="BGR"
+detector.backgrounds.ours.single_channel = "GRAY"
 
 gtruth = AttrDict()
-gtruth.static = True
+gtruth.src = None # No hace falta cambiar este parametro
+gtruth.include_static_iou = False #funcion del sergio para descartar IoU==1
+gtruth.include_parked = True    # descartamos aquellos que tienen el atributo parked = 1
+gtruth.include_occluded = True # descartamos aquellos que tienen el atributo occluded = "true"
