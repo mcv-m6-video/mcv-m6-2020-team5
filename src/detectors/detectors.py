@@ -9,6 +9,7 @@ import cv2
 from .backgrounds import BGSTModule
 from .groundtruths import gt_predict, gt_yolo_predict, gt_ssd_predict, \
                          gt_rcnn_predict
+import detectors.detectron_detect as dt
 
 detectors_dict = {"gt_noise":gt_predict,
              "gt_yolo": gt_yolo_predict,
@@ -17,6 +18,8 @@ detectors_dict = {"gt_noise":gt_predict,
 
 _DET_BACKGROUNDS = ["color_gauss_black_rem","gauss_black_rem", "MOG", "MOG2", 
                     "CNT", "GMG", "LSBP", "GSOC", "Subsense", "Lobster"]
+
+_NN_DETECTORS = ["detectron"]
 
 _COLOR_SPACE = ['BGR','RGB','BGRA','RGBA','XYZ','YCBCR','HSV','LAB','LUV',
                 'HLS','YUV']
@@ -49,15 +52,18 @@ def obtain_bgseg_detector(dtype, activate_mask=True, mask_path=True, init_at=10,
     return f, bgsg_module
             
 def obtain_detector(dtype=None, activate_mask=None, 
-                    mask_path=None, backgrounds = {}):
+                    mask_path=None, backgrounds = {}, detectron = {}):
     bgsg_module = None
-    all_detector_names = _DET_BACKGROUNDS + list(detectors_dict.keys())
+    all_detector_names = _DET_BACKGROUNDS + list(detectors_dict.keys()) + _NN_DETECTORS
     if(dtype not in all_detector_names):
         raise(ValueError(f"Detector name '{dtype}' not recognized. Available: {all_detector_names}"))
     if(dtype in _DET_BACKGROUNDS):
         func_detector, bgsg_module = obtain_bgseg_detector(dtype, 
                                               activate_mask=activate_mask, mask_path=mask_path,
                                               **backgrounds.ours)
+    if(dtype == "detectron"):
+        dclass = dt.detectron_detector(**detectron)
+        func_detector = dclass.predict
     if(dtype in detectors_dict.keys()):
         func_detector = detectors_dict[dtype]
     return func_detector, bgsg_module

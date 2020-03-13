@@ -8,6 +8,7 @@ from .utils import AttrDict
  
 STOP_AT = -1
 VISUALIZE = True
+WEIGHTS = "../weights"
 
 video = AttrDict()
 video.save_video = False
@@ -53,7 +54,7 @@ plots.iou.save = False              # Save every frame of the plot
 plots.iou.n_frames = 1              # Save every N frames
 
 detector = AttrDict()
-detector.dtype = "MOG"       # Detector to use
+detector.dtype = "detectron"       # Detector to use
 detector.activate_mask = False          # Whether or not to activate the mask to discard possible noise
 detector.mask_path = "./img/scene_mask.png"  # path to the mask
 detector.backgrounds = AttrDict()
@@ -63,6 +64,9 @@ detector.backgrounds.ours.alpha = 5 #Try for different values (2.5 should be goo
 detector.backgrounds.ours.rho = 0.01 #If different than 0 then adaptive
 detector.backgrounds.ours.color_space ="BGR"
 detector.backgrounds.ours.single_channel = "GRAY"
+detector.detectron = AttrDict()
+detector.detectron.train_frames = 535
+detector.detectron.weights_path = WEIGHTS+"/detectron.weights"
 
 gtruth = AttrDict()
 gtruth.src = None # No hace falta cambiar este parametro

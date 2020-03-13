@@ -12,6 +12,7 @@ import cv2
 from detectors.detectors import obtain_detector
 from detectors.groundtruths import obtain_gt
 
+
 from metrics.mAP import getMetricsClass, IoU
 from metrics.graphs import LinePlot, iouFrame
 import numpy as np
@@ -42,8 +43,6 @@ def main(new_config):
     detect_func, bgsg_module = obtain_detector(**gconf.detector)
 
     gt_frames = obtain_gt(**gconf.gtruth, IoU_func=IoU)
-
-        
     
     avg_precision = []
     iou_history = []
@@ -80,7 +79,7 @@ def main(new_config):
             if i > gconf.detector.backgrounds.ours.init_at:
                 avg_precision.append(avg_precision_frame)
                 iou_history.append(iou_frame)
-                iou_plot.update(iou_frame)
+                # iou_plot.update(iou_frame)
             #Print Graph
 
 
