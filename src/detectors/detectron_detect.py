@@ -22,6 +22,7 @@ class detectron_detector(object):
         
     def __initialize_network(self):
         cfg = get_cfg()
+        cfg.merge_from_file("../models/retina_net_R50/config.yaml")
         cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
         cfg.MODEL.WEIGHTS = "../models/retina_net_R50/model_final.pkl"
 
