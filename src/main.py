@@ -18,6 +18,7 @@ from line_arguments import general_parser
 
 from config.utils import obtain_general_config
 from detectors.backgrounds.single_gaussian import obtain_global_var_mean
+from utils.bbfilters import bbfilters
 
 SOURCE = "../datasets/AICity_data/train/S03/c010/vdo.avi"
 
@@ -102,6 +103,7 @@ def main(new_config):
             #Classify the result
             dt_rects = detect_func(frame)
 
+            dt_rects, _ = bbfilters(dt_rects, frame, **gconf.bbox_filter)
             #Obtain GT
             
             #Compute the metrics
@@ -112,7 +114,7 @@ def main(new_config):
                 iou_plot.update(iou_frame)
             #Print Graph
 
-
+            
             
 
             # if i > 1000:

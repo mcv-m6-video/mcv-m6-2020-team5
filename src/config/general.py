@@ -11,10 +11,10 @@ VISUALIZE = True
 
 video = AttrDict()
 video.save_video = True
-video.fname = 'output_best_adaptative_mean.avi'
+video.fname = 'output_best_adaptative_mean_2.avi'
 video.fps = 30
-video.stack_iou = False
-video.start_save = 650
+video.stack_iou = True
+video.start_save = 3000
 video.duration = 3      #duration in seconds
 
 # PRINT CONFIGURATION
@@ -51,6 +51,15 @@ detector.init_at = 535 # where to init computing IoU and mAP, after training the
 detector.alpha = 5 #Try for different values (2.5 should be good)
 detector.rho = 0.01 #If different than 0 then adaptive
 
+bbox_filter = AttrDict()
+bbox_filter.wf_high=0.4
+bbox_filter.hf_high=0.4
+bbox_filter.wf_low=0.005
+bbox_filter.hf_low=0.005 
+bbox_filter.min_size=0.0003
+bbox_filter.max_size=0.1
+bbox_filter.form_factor_low=0.2
+bbox_filter.form_factor_high=10
 
 gtruth = AttrDict()
 gtruth.static = True
