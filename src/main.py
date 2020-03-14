@@ -102,7 +102,7 @@ def main(new_config):
 
             frame = print_func(frame.copy(), gt_rects, dt_rects, bgseg, orig_bgseg, 
                                gconf.pout, tracker)
-            # cv2.imshow('Frame',frame)
+            cv2.imshow('Frame',frame)
             if i > gconf.detector.backgrounds.ours.init_at:
                 
                 f_out = frame 
