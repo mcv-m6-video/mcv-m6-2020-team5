@@ -19,10 +19,10 @@ video.start_save = 3000
 video.duration = 3      #duration in seconds
 
 tracker = AttrDict()
-tracker.ttype = "centroid"
+tracker.ttype = "box"
 tracker.centroid = AttrDict()
 tracker.centroid.maxDisappeared=5
-tracker.centroid.pix_tol=500
+tracker.centroid.pix_tol=100
 tracker.centroid.status_save=False
 
 # PRINT CONFIGURATION
