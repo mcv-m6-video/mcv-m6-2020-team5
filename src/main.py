@@ -15,6 +15,7 @@ from detectors.groundtruths import obtain_gt
 
 from metrics.mAP import getMetricsClass, IoU
 from metrics.graphs import LinePlot, iouFrame
+from metrics.mot import mot_metrics
 import numpy as np
 
 from display import print_func
@@ -45,6 +46,7 @@ def main(new_config):
 
     gt_frames = obtain_gt(**gconf.gtruth, IoU_func=IoU)
     
+    tracking_metrics = mot_metrics()
     avg_precision = []
     iou_history = []
     iou_plot = LinePlot(gconf.plots.iou.name,
@@ -66,6 +68,8 @@ def main(new_config):
             # rects = detect_func(frame)
             
             #Retrack over the frame
+            gt_rects = gt_frames[str(i)]
+            
             
             #Classify the result
             dt_rects = detect_func(frame)
@@ -81,6 +85,7 @@ def main(new_config):
             if i > gconf.detector.backgrounds.ours.init_at:
                 avg_precision.append(avg_precision_frame)
                 iou_history.append(iou_frame)
+                tracking_metrics.update(tracker.object_paths,gt_rects)
                 # iou_plot.update(iou_frame)
             #Print Graph
 
@@ -96,7 +101,8 @@ def main(new_config):
             
             #Print Results
             ## prepare data
-            gt_rects = gt_frames[str(i)]
+
+            
             bgseg = None if bgsg_module is None else bgsg_module.get_bgseg()
             orig_bgseg = None if bgsg_module is None else bgsg_module.get_orig_bgseg()
 
@@ -140,6 +146,7 @@ def main(new_config):
     print("mAP_allframes: {}".format(calculate_ap(dt_rects_dict, gt_frames, 535, 2140, 'random')))
     print("mIoU for all the video: ", np.mean(iou_history))
     print("mAP for all the video: ", np.mean(avg_precision))
+    print(tracking_metrics.get_metrics())
     cap.release()
     if(gconf.video.save_video):
         out_cap.release()

@@ -33,7 +33,7 @@ def obtain_gt(src=None, include_parked=False, include_occluded=False,
         gdict = xmltodict.parse(fd)
     frame_list = {}
     for track in gdict["annotations"]["track"]:
-        # t_id = track["@id"]
+        t_id = track["@id"]
         for box in track["box"]:
             f_id = box["@frame"]
             if(f_id not in frame_list):
@@ -50,7 +50,8 @@ def obtain_gt(src=None, include_parked=False, include_occluded=False,
             area = (float(box["@xtl"]), 
                     float(box["@ytl"]),
                     float(box["@xbr"]), 
-                    float(box["@ybr"]))
+                    float(box["@ybr"]),
+                    int(t_id))
             frame_list[f_id].append(area)
             
     if(not include_static_iou):
