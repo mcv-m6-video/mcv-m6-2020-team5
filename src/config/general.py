@@ -19,9 +19,13 @@ video.start_save = 3000
 video.duration = 3      #duration in seconds
 
 tracker = AttrDict()
-tracker.ttype = "overlap"
-tracker.maxDisappeared=5
-tracker.pix_tol=100
+tracker.ttype = "centroid"
+tracker.Multi = AttrDict()
+tracker.Multi.maxDisappeared=5
+tracker.Multi.pix_tol=100
+tracker.Sort = AttrDict()
+tracker.Sort.max_age=7
+tracker.Sort.min_hits=2
 
 
 # PRINT CONFIGURATION
@@ -53,7 +57,7 @@ plots.iou.save = False              # Save every frame of the plot
 plots.iou.n_frames = 1              # Save every N frames
 
 detector = AttrDict()
-detector.dtype = "detectron"       # Detector to use
+detector.dtype = "MOG"       # Detector to use
 detector.activate_mask = False          # Whether or not to activate the mask to discard possible noise
 detector.mask_path = "./img/scene_mask.png"  # path to the mask
 detector.backgrounds = AttrDict()
