@@ -68,7 +68,7 @@ detector.backgrounds.ours.rho = 0.01 #If different than 0 then adaptive
 detector.backgrounds.ours.color_space ="BGR"
 detector.backgrounds.ours.single_channel = "GRAY"
 detector.detectron = AttrDict()
-detector.detectron.train_frames = 535
+detector.detectron.train_frames = 2140
 detector.detectron.weights_path = WEIGHTS+"/detectron.weights"
 
 bbox_filter = AttrDict()
