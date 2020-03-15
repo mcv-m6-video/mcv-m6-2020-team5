@@ -19,11 +19,10 @@ video.start_save = 3000
 video.duration = 3      #duration in seconds
 
 tracker = AttrDict()
-tracker.ttype = "box"
-tracker.centroid = AttrDict()
-tracker.centroid.maxDisappeared=5
-tracker.centroid.pix_tol=100
-tracker.centroid.status_save=False
+tracker.ttype = "overlap"
+tracker.maxDisappeared=5
+tracker.pix_tol=100
+
 
 # PRINT CONFIGURATION
 pout = AttrDict()           #Print Out, to avoid re-declare "print" function

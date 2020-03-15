@@ -60,7 +60,7 @@ def check_img_diff(obj, old_img, new_img, obtain_bounding):
 class BoxTracker():
     def __init__(self, maxDisappeared=50, key=lambda x:x, get_patch=None,
                  update_obj = lambda old, new: new, pix_tol=500,
-                 status_save=True, status_time_recover=("00:30:00"),
+                 status_save=False, status_time_recover=("00:30:00"),
                  status_fpath="track_status{}.pkl"):
         # initialize the next unique object ID along with two ordered
         # dictionaries used to keep track of mapping a given object

@@ -5,8 +5,8 @@ Created on Fri Mar 13 18:00:38 2020
 
 @author: dazmer
 """
-from .centroid_tracker import CentroidTracker
-from .box_tracker import BoxTracker
+from .multi_tracker import MultiTracker
+# from .box_tracker import BoxTracker
 
 
 def get_centroid(rect):
@@ -21,10 +21,10 @@ def get_rect(rect):
 
 
 def obtain_tracker(ttype, config):
-    if(ttype=="centroid"):
-        tracker = CentroidTracker(key=get_centroid, **config.centroid)
-    elif(ttype=="box"):
-        tracker = BoxTracker(key=get_centroid, **config.centroid)
+    if(config.ttype in ["centroid", "overlap"]):
+        tracker = MultiTracker(key=get_centroid, **config)
+    # elif(config.ttype=="overlap"):
+    #     tracker = MultiTracker(key=get_centroid, **config.centroid)
     else:
         raise(ValueError(f"Tracker type not recognized: {ttype}"))
     return tracker

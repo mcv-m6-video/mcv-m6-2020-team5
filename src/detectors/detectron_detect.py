@@ -121,7 +121,7 @@ def obtain_global_var_mean():
     global MEAN_IMAGE
     return np.dstack([MEAN_IMAGE]*3)
 
-def get_dicts(lists = 'train', N, method = 'random'):
+def get_dicts(lists = 'train', N=0.25, method = 'random'):
     img_dir="../datasets/AICity_data/train/S03/c010" 
     annot_dir="../datasets/"
     

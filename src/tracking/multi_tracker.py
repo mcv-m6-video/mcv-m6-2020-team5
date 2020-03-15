@@ -13,6 +13,41 @@ import time
 import datetime
 from os import path
 
+def IoU(boxA, boxB):
+	# determine the (x, y)-coordinates of the intersection rectangle
+	xA = max(boxA[0], boxB[0])
+	yA = max(boxA[1], boxB[1])
+	xB = min(boxA[2], boxB[2])
+	yB = min(boxA[3], boxB[3])
+	# compute the area of intersection rectangle
+	interArea = max(0, xB - xA + 1) * max(0, yB - yA + 1)
+	# compute the area of both the prediction and ground-truth
+	# rectangles
+	boxAArea = (boxA[2] - boxA[0] + 1) * (boxA[3] - boxA[1] + 1)
+	boxBArea = (boxB[2] - boxB[0] + 1) * (boxB[3] - boxB[1] + 1)
+	# compute the intersection over union by taking the intersection
+	# area and dividing it by the sum of prediction + ground-truth
+	# areas - the interesection area
+	iou = interArea / float(boxAArea + boxBArea - interArea)
+	# return the intersection over union value
+	return iou
+
+def centroid_distances(old_rect_list, new_rect_list, key):
+    olderCentroids = [key(c) for c in old_rect_list]
+    inputCentroids = [key(c) for c in new_rect_list]
+    D = dist.cdist(np.array(olderCentroids), inputCentroids)
+    return D
+
+def overlap_ratio(old_rect_list, new_rect_list, key):
+    D = []
+    for old_rect in old_rect_list:
+        current_d = []
+        for new_rect in new_rect_list:
+            current_d.append(1-IoU(old_rect,new_rect))
+        D.append(np.array(current_d))
+    D = np.array(D)
+    return D
+     
 def check_img_diff(obj, old_img, new_img, obtain_bounding):
     if(old_img is not None):
         # total_probability = 0
@@ -38,10 +73,10 @@ def check_img_diff(obj, old_img, new_img, obtain_bounding):
     else:
         return 1
 
-class CentroidTracker():
-    def __init__(self, maxDisappeared=50, key=lambda x:x, get_patch=None,
+class MultiTracker():
+    def __init__(self, ttype, maxDisappeared=50, key=lambda x:x, get_patch=None,
                  update_obj = lambda old, new: new, pix_tol=500,
-                 status_save=True, status_time_recover=("00:30:00"),
+                 status_save=False, status_time_recover=("00:30:00"),
                  status_fpath="track_status{}.pkl"):
         # initialize the next unique object ID along with two ordered
         # dictionaries used to keep track of mapping a given object
@@ -51,6 +86,8 @@ class CentroidTracker():
         self.objects = OrderedDict()
         self.disappeared = OrderedDict()
         self.object_paths = OrderedDict()
+        
+        self.ttype = ttype
         
         # store the number of maximum consecutive frames a given
         # object is allowed to be marked as "disappeared" until we
@@ -152,14 +189,22 @@ class CentroidTracker():
         else:
             # grab the set of object IDs and corresponding centroids
             objectIDs = list(self.objects.keys())
-            objectCentroids = [self.key(c) for c in list(self.objects.values())]
+            # objectCentroids = [self.key(c) for c in list(self.objects.values())]
 
             # compute the distance between each pair of object
             # centroids and input centroids, respectively -- our
             # goal will be to match an input centroid to an existing
             # object centroid
-            D = dist.cdist(np.array(objectCentroids), inputCentroids)
-
+            
+            ### COMPUTING DISTANCES ###
+            centroid_dist = centroid_distances(self.objects.values(), rects, self.key)
+            if(self.ttype == "centroid"):
+                # D = dist.cdist(np.array(objectCentroids), inputCentroids)
+                D = centroid_dist
+            elif(self.ttype == "overlap"):
+                D = overlap_ratio(self.objects.values(), rects, self.key)
+            else:
+                raise(ValueError(f"ttype not recognized: {self.ttype}"))
             # in order to perform this matching we must (1) find the
             # smallest value in each row and then (2) sort the row
             # indexes based on their minimum values so that the row
@@ -186,7 +231,9 @@ class CentroidTracker():
                 # val
                 if row in usedRows or col in usedCols:
                     continue
-                if D[row][col] > self.pixel_tolerance:
+                if self.ttype == "overlap" and D[row][col] >= 1:
+                    continue
+                if centroid_dist[row][col] > self.pixel_tolerance:
                     continue
                 # otherwise, grab the object ID for the current row,
                 # set its new centroid, and reset the disappeared

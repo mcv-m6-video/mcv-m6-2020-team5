@@ -9,7 +9,7 @@ import cv2
 from .backgrounds import BGSTModule
 from .groundtruths import gt_predict, gt_yolo_predict, gt_ssd_predict, \
                          gt_rcnn_predict
-import detectors.detectron_detect as dt
+
 
 detectors_dict = {"gt_noise":gt_predict,
              "gt_yolo": gt_yolo_predict,
@@ -62,6 +62,7 @@ def obtain_detector(dtype=None, activate_mask=None,
                                               activate_mask=activate_mask, mask_path=mask_path,
                                               **backgrounds.ours)
     if(dtype == "detectron"):
+        import detectors.detectron_detect as dt
         dclass = dt.detectron_detector(**detectron)
         func_detector = dclass.predict
     if(dtype in detectors_dict.keys()):
