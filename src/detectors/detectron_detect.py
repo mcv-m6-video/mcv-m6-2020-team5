@@ -14,26 +14,34 @@ from detectron2.config import get_cfg
 from detectron2.utils.visualizer import Visualizer
 from detectron2.data.catalog import DatasetCatalog
 from detectron2.data import MetadataCatalog
+from detectron2.structures import BoxMode
 import cv2
 from detectors.groundtruths.gt_modifications import obtain_gt
+from tqdm import tqdm
+from PIL import Image
+import random
+import pickle
 
 import xmltodict
 
 MEAN_IMAGE = None
 
 class detectron_detector(object):
-    def __init__(self,train_frames = 535, weights_path=None, net="retinanet"):
+    def __init__(self,train_frames = 100, weights_path=None, net="retinanet"):
         self._n_of_trainings = 0
         self.thr_n_of_training = train_frames
-        self.trained = False
+        self.training = True
         self.tmp_train_frames = []
+        self.method_train = 'initial'
         self.weights_path = weights_path
         self.cfg = get_cfg()
         self.predictor = self.__initialize_network(net)
         
     def __initialize_network(self,network):
+        if self.training:
+            self.train(self.thr_n_of_training, self.method_train) 
         retinanet_path = "COCO-Detection/retinanet_R_101_FPN_3x.yaml"
-        faster_rcnn_path = "COCO-Detection/retinanet_R_101_FPN_3x.yaml"
+        faster_rcnn_path = "COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml"
         
         if(detectron2.__version__ == "0.1"):
             if network == "retinanet":
@@ -60,36 +68,40 @@ class detectron_detector(object):
     
     
         
-    def generate_datasets(self, Ntraining):
-        
-        DatasetCatalog.register('training_set', get_dicts('train', Ntraining))
-        MetadataCatalog.get('training_set').set(thing_classes='Car')
-        
-    def train(self,training_frames):
-        if(len(training_frames) <= 0):
+    def generate_datasets(self, Ntraining, method):
+        dataset_train, dataset_val = get_dicts(Ntraining, method)
+        for d in ['train', 'val']:
+            DatasetCatalog.register(d + '_set', lambda d=d: dataset_train if d == 'train' else dataset_val)
+            MetadataCatalog.get(d + '_set').set(thing_classes='Car')
+    
+    
+    def train(self, training_frames, train_method):
+        if(training_frames <= 0):
             raise ValueError("The number of input frames must be bigger than 0")
         
-        self.generate_datasets(len(training_frames), method = 'random')
-        
-        #Crear el dataloader per al dataset d'entrenament.
-        self.cfg.DATASETS.TRAIN = ('training_set',)#Modificar
-        self.cfg.DATALOADER.NUM_WORKERS = 2
-        self.cfg.SOLVER.IMS_PER_BATCH = 2
-        self.cfg.SOLVER.BASE_LR = 0.001
-        self.cfg.SOLVER.MAX_ITER = 15000
-        self.cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 256 
-        self.cfg.MODEL.ROI_HEADS.NUM_CLASSES = len(kitti_mots_dataset.thing_classes)#Modificar
+        if not os.path.isfile(os.path.join(self.cfg.OUTPUT_DIR, 'detectron2/model_final_' + str(train_method) + '.pth')):
+    
+            self.generate_datasets(training_frames, method = train_method)
+            
+            self.cfg.DATASETS.TRAIN = ('train_set',)
+            self.cfg.DATASETS.TEST = ('val_set', )
+            self.cfg.OUTPUT_DIR = ('../datasets')
+            self.cfg.DATALOADER.NUM_WORKERS = 2
+            self.cfg.SOLVER.IMS_PER_BATCH = 2
+            self.cfg.SOLVER.BASE_LR = 0.001
+            self.cfg.SOLVER.MAX_ITER = 3000
+            self.cfg.SOLVER.STEPS = (1000, 3000)
+            self.cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 256 
+            self.cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1
 
-        os.makedirs(self.cfg.OUTPUT_DIR, exist_ok=True)
-        
-        trainer = DefaultTrainer(self.cfg)
-        trainer.resume_or_load(resume=False)
-        trainer.train()    
-        self.cfg.MODEL.WEIGHTS = os.path.join(self.cfg.OUTPUT_DIR, 'model_final.pth')
-        #Fer el train a aquí.Tot i això cal crear els dicts com fem al M5  
-        
-        return self.cfg
-        
+            os.makedirs(self.cfg.OUTPUT_DIR, exist_ok=True)
+            
+            trainer = DefaultTrainer(self.cfg)
+            trainer.resume_or_load(resume=False)
+            trainer.train()
+                
+            self.cfg.MODEL.WEIGHTS = os.path.join(self.cfg.OUTPUT_DIR, 'detectron2/model_final_' + str(train_method) + '.pth')
+                
         
     def predict(self,frame):
         
@@ -121,73 +133,105 @@ def obtain_global_var_mean():
     global MEAN_IMAGE
     return np.dstack([MEAN_IMAGE]*3)
 
-def get_dicts(lists = 'train', N=0.25, method = 'random'):
+def get_dicts(N_frames, method):
     img_dir="../datasets/AICity_data/train/S03/c010" 
     annot_dir="../datasets/"
+    output_dir="../datasets/frames/"
     
     filename = os.path.join(img_dir, "vdo.avi")
-    annotname = os.path.join(img_dir, "ai_challenge_s03_c010-full_annotation.xml")
+    annotname = os.path.join(annot_dir, "ai_challenge_s03_c010-full_annotation.xml")
 
     dataset_dicts = []
     dataset_train = []
     dataset_val = []
-    
-    thing_classes = ["Car"]
-    
-    if not os.path.exists(dirName):
+        
+    if not os.path.exists(output_dir):
         vidcap = cv2.VideoCapture(filename)
         success,image = vidcap.read()
         count = 0
     
-        dirName = "frames"
-        os.mkdir(dirName)
+        os.mkdir(output_dir)
         
         while success:
-            cv2.imwrite("frame%d.jpg" % count, image)     # save frame as JPEG file      
+            cv2.imwrite(output_dir + "frame_%d.jpg" % count, image)     # save frame as JPEG file      
             success,image = vidcap.read()
-            print('Read a new frame: ', success)
+            print('Read a new frame: ', count)
             count += 1
     
-    for idx, img_name in tqdm(enumerate(os.listdir("../frames/")),desc='Getting dicts'):
-        record = {}
-        filename = os.path.join("../frames", img_name)
-        height, width = Image.open(filename).size
-
-        record["file_name"] = filename
-        record["image_id"] = idx
-        record["height"] = height
-        record["width"] = width
-        
-        #Refer les annotations
-        with open(annotname, "rb") as fd:
-            gdict = xmltodict.parse(fd)
-
-        objs = []
+    if not os.path.isfile(annot_dir + 'detectron2/dataset_train_' + str(method) + '.pkl'):
         
         frame_list = obtain_gt(include_parked = True)
-                
-        for coord in frame_list:
+
+        frame = 0
+        for idx, img_name in tqdm(enumerate(os.listdir(output_dir)),desc='Getting dicts'):
+            boxes = frame_list[str(idx)]
+
+            record = {}
+            filename = os.path.join(output_dir, img_name)
+            width, height = Image.open(filename).size
+
+            record["file_name"] = filename
+            record["image_id"] = idx
+            record["height"] = height
+            record["width"] = width
             
-            bbox = [float(xy) for xy in coord]
-            obj = {
-                "bbox": bbox,
-                "bbox_mode": BoxMode.XYXY_ABS,
-                "category_id": thing_classes[0],
-                "iscrowd": 0
-                }
-            objs.append(obj)
+            #Refer les annotations
+            with open(annotname, "rb") as fd:
+                gdict = xmltodict.parse(fd)
 
-        record["annotations"] = objs
-        dataset_dicts.append(record)
+            objs = []
+            
+            for coord in range(len(boxes)):
+                bbox = [float(xy) for xy in boxes[coord][0:4]]
+                obj = {
+                    "bbox": bbox,
+                    "bbox_mode": BoxMode.XYXY_ABS,
+                    "category_id": 0,
+                    "iscrowd": 0
+                    }
+                objs.append(obj)
 
-    dataset_train = dataset_dicts
-    
-        #Separar entre training i test (comprovar que estigui bé que és un copy paste molt a saco)
-    if method == 'random':
-        val_samples = random.choices(np.arange(0,len(self),1),k=int(len(self)*split))
-        val_img = [str(img).zfill(6)+'.png' for img in val_samples]
-        dataset_train = [dic for dic in dataset_dicts if not dic['file_name'].split('/')[-1] in val_img]
-        dataset_val = [dic for dic in dataset_dicts if dic['file_name'].split('/')[-1] in val_img]
+            record["annotations"] = objs
+            dataset_dicts.append(record)
+
+            if frame == N_frames:
+                break
+            frame += 1
+
+        dataset_train = dataset_dicts
         
+        if method == 'random':
+            val_samples = random.sample(list(np.arange(0,N_frames,1)),int(0.25*N_frames))
+
+            val_img = ['frame_' + str(img) +'.jpg' for img in val_samples]
+            dataset_train = [dic for dic in dataset_dicts if not dic['file_name'].split('/')[-1] in val_img]
+            dataset_val = [dic for dic in dataset_dicts if dic['file_name'].split('/')[-1] in val_img]
+            
+            with open(annot_dir + 'detectron2/dataset_train_random.pkl', 'wb') as handle:
+                pickle.dump(dataset_train, handle)
+                
+            with open(annot_dir + 'detectron2/dataset_val_random.pkl', 'wb') as handle:
+                pickle.dump(dataset_val, handle)
+        
+        if method == 'initial':
+            val_samples = list(np.arange(0.25 * N_frames,1))
+            
+            val_img = ['frame_' + str(img) +'.jpg' for img in val_samples]
+            dataset_train = [dic for dic in dataset_dicts if not dic['file_name'].split('/')[-1] in val_img]
+            dataset_val = [dic for dic in dataset_dicts if dic['file_name'].split('/')[-1] in val_img]
+            
+            with open(annot_dir + 'detectron2/dataset_train_initial.pkl', 'wb') as handle:
+                pickle.dump(dataset_train, handle)
+                
+            with open(annot_dir + 'detectron2/dataset_val_initial.pkl', 'wb') as handle:
+                pickle.dump(dataset_val, handle)
+    
+    else:
+        pkl_file_train = open(annot_dir + 'detectron2/dataset_train_' + str(method) + '.pkl', 'rb')
+        pkl_file_val = open(annot_dir + 'detectron2/dataset_val_' + str(method) + '.pkl', 'rb')
+
+        dataset_train = pickle.load(pkl_file_train, fix_imports=True, encoding='ASCII', errors='strict')
+        dataset_val = pickle.load(pkl_file_val, fix_imports=True, encoding='ASCII', errors='strict')
+  
     return dataset_train, dataset_val
     
