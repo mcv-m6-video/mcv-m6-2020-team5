@@ -1,4 +1,3 @@
-
 import numpy as np
 import matplotlib.pyplot as plt
 import pathlib
@@ -27,12 +26,12 @@ import xmltodict
 MEAN_IMAGE = None
 
 class detectron_detector(object):
-    def __init__(self,train_frames = 100, weights_path=None, net="retinanet"):
+    def __init__(self,train_frames = 100, weights_path=None, net="retinanet", train_method='random'):
         self._n_of_trainings = 0
         self.thr_n_of_training = train_frames
         self.training = True
         self.tmp_train_frames = []
-        self.method_train = 'initial'
+        self.method_train = train_method
         self.weights_path = weights_path
         self.cfg = get_cfg()
         self.predictor = self.__initialize_network(net)
@@ -79,28 +78,29 @@ class detectron_detector(object):
         if(training_frames <= 0):
             raise ValueError("The number of input frames must be bigger than 0")
         
-        if not os.path.isfile(os.path.join(self.cfg.OUTPUT_DIR, 'detectron2/model_final_' + str(train_method) + '.pth')):
     
-            self.generate_datasets(training_frames, method = train_method)
-            
-            self.cfg.DATASETS.TRAIN = ('train_set',)
-            self.cfg.DATASETS.TEST = ('val_set', )
-            self.cfg.OUTPUT_DIR = ('../datasets')
-            self.cfg.DATALOADER.NUM_WORKERS = 2
-            self.cfg.SOLVER.IMS_PER_BATCH = 2
-            self.cfg.SOLVER.BASE_LR = 0.001
-            self.cfg.SOLVER.MAX_ITER = 3000
-            self.cfg.SOLVER.STEPS = (1000, 3000)
-            self.cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 256 
-            self.cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1
-
+        self.generate_datasets(training_frames, method = train_method)
+        
+        self.cfg.DATASETS.TRAIN = ('train_set',)
+        self.cfg.DATASETS.TEST = ('test_set',)
+        self.cfg.OUTPUT_DIR = ('../datasets/detectron2/' + str(train_method))
+        self.cfg.DATALOADER.NUM_WORKERS = 2
+        self.cfg.SOLVER.IMS_PER_BATCH = 2
+        self.cfg.SOLVER.BASE_LR = 0.001
+        self.cfg.SOLVER.MAX_ITER = 3000
+        self.cfg.SOLVER.STEPS = (1000, 3000)
+        self.cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 256 
+        self.cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1
+        
+        if not os.path.isfile(os.path.join(self.cfg.OUTPUT_DIR, 'model_final.pth')):
+    
             os.makedirs(self.cfg.OUTPUT_DIR, exist_ok=True)
             
             trainer = DefaultTrainer(self.cfg)
             trainer.resume_or_load(resume=False)
             trainer.train()
                 
-            self.cfg.MODEL.WEIGHTS = os.path.join(self.cfg.OUTPUT_DIR, 'detectron2/model_final_' + str(train_method) + '.pth')
+            self.cfg.MODEL.WEIGHTS = os.path.join(self.cfg.OUTPUT_DIR, 'model_final_' + '.pth')
                 
         
     def predict(self,frame):
@@ -202,6 +202,7 @@ def get_dicts(N_frames, method):
         
         if method == 'random':
             val_samples = random.sample(list(np.arange(0,N_frames,1)),int(0.25*N_frames))
+            print(val_samples)
 
             val_img = ['frame_' + str(img) +'.jpg' for img in val_samples]
             dataset_train = [dic for dic in dataset_dicts if not dic['file_name'].split('/')[-1] in val_img]
@@ -214,8 +215,8 @@ def get_dicts(N_frames, method):
                 pickle.dump(dataset_val, handle)
         
         if method == 'initial':
-            val_samples = list(np.arange(0.25 * N_frames,1))
-            
+            val_samples = list(np.arange(int(0.25 * N_frames)))
+
             val_img = ['frame_' + str(img) +'.jpg' for img in val_samples]
             dataset_train = [dic for dic in dataset_dicts if not dic['file_name'].split('/')[-1] in val_img]
             dataset_val = [dic for dic in dataset_dicts if dic['file_name'].split('/')[-1] in val_img]

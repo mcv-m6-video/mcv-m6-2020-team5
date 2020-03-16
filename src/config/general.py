@@ -57,7 +57,7 @@ plots.iou.save = False              # Save every frame of the plot
 plots.iou.n_frames = 1              # Save every N frames
 
 detector = AttrDict()
-detector.dtype = "MOG"       # Detector to use
+detector.dtype = "detectron"       # Detector to use
 detector.activate_mask = False          # Whether or not to activate the mask to discard possible noise
 detector.mask_path = "./img/scene_mask.png"  # path to the mask
 detector.backgrounds = AttrDict()
@@ -70,6 +70,7 @@ detector.backgrounds.ours.single_channel = "GRAY"
 detector.detectron = AttrDict()
 detector.detectron.train_frames = 2140
 detector.detectron.weights_path = WEIGHTS+"/detectron.weights"
+detector.detectron.train_method = 'random' # Possible methods (so far): random, initial
 
 bbox_filter = AttrDict()
 bbox_filter.wf_high=0.4

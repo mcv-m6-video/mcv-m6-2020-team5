@@ -27,6 +27,8 @@ from utils.bbfilters import bbfilters
 from metrics.map_all_frames import calculate_ap
 from tracking.trackers import obtain_tracker
 
+import pickle
+
 SOURCE = "../datasets/AICity_data/train/S03/c010/vdo.avi"
 
 def main(new_config):
@@ -53,7 +55,17 @@ def main(new_config):
                         max_val=gconf.plots.iou.max_val,
                         save_plots=gconf.plots.iou.save)
     # mAP_plot = LinePlot("mAP_frame",max_val=350)
+    
+    # Dictionaries to compute the AP over all the frames together
     dt_rects_dict = {}
+    gt_frames_dict = {}
+    
+    # Get the values to use for training and validation
+    pkl_file_train = open('../datasets/detectron2/dataset_train_' + gconf.detector.detectron.train_method + '.pkl', 'rb')
+    pkl_file_val = open('../datasets/detectron2/dataset_val_' + gconf.detector.detectron.train_method + '.pkl', 'rb')
+
+    dataset_train = pickle.load(pkl_file_train, fix_imports=True, encoding='ASCII', errors='strict')
+    dataset_val = pickle.load(pkl_file_val, fix_imports=True, encoding='ASCII', errors='strict')
     
     tracker = obtain_tracker(gconf.tracker.ttype, gconf.tracker)
     i = 0
@@ -75,22 +87,34 @@ def main(new_config):
             dt_rects = detect_func(frame)
             dt_rects, _ = bbfilters(dt_rects, frame, **gconf.bbox_filter)
             dt_rects = tracker.update(dt_rects)
-            dt_rects_dict[str(i)] = list(dt_rects.values())
             #Obtain GT
             
             #Compute the metrics
             avg_precision_frame, iou_frame = getMetricsClass(list(dt_rects.values()), 
                                                              gt_frames[str(i)], 
                                                              nclasses=1)
-            if i > gconf.detector.backgrounds.ours.init_at:
-                avg_precision.append(avg_precision_frame)
-                iou_history.append(iou_frame)
-                tracking_metrics.update(tracker.object_paths,gt_rects)
-                # iou_plot.update(iou_frame)
+            
+            if gconf.detector.dtype == 'detectron':
+                val_img = 'frame_' + str(i) + '.jpg'
+                for dic in dataset_val:
+                    if val_img == (dic['file_name'].split('/')[-1]):
+                        if i > gconf.detector.backgrounds.ours.init_at:
+                            dt_rects_dict[str(i)] = list(dt_rects.values())
+                            gt_frames_dict[str(i)] = gt_frames[str(i)]
+                            avg_precision.append(avg_precision_frame)
+                            iou_history.append(iou_frame)
+                            tracking_metrics.update(tracker.object_paths,gt_rects)
+                            # iou_plot.update(iou_frame)
+            else: 
+                if i > gconf.detector.backgrounds.ours.init_at:
+                    dt_rects_dict[str(i)] = list(dt_rects.values())
+                    gt_frames_dict[str(i)] = gt_frames[str(i)]
+                    avg_precision.append(avg_precision_frame)
+                    iou_history.append(iou_frame)
+                    tracking_metrics.update(tracker.object_paths,gt_rects)
+            
             #Print Graph
-
-            
-            
+          
 
             # if i > 1000:
             #     break
@@ -143,7 +167,7 @@ def main(new_config):
         else:
             break
 
-    print("mAP_allframes: {}".format(calculate_ap(dt_rects_dict, gt_frames, 535, 2140, 'random')))
+    print("mAP_allframes: {}".format(calculate_ap(dt_rects_dict, gt_frames_dict, 0, len(gt_frames_dict), 'random')))
     print("mIoU for all the video: ", np.mean(iou_history))
     print("mAP for all the video: ", np.mean(avg_precision))
     print(tracking_metrics.get_metrics())

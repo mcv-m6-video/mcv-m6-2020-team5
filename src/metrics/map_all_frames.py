@@ -32,7 +32,6 @@ def frame_AP(n_gt, f_det_bb, frame_gt_bb):
             iou = IoU(f_det, f_gt)
             ious.append(iou)
 
-        print(ious)
         arg_max = np.argmax(ious)
         if ious[arg_max] > 0.5:
             frame_gt_bb[0].pop(arg_max)
@@ -51,8 +50,6 @@ def calculate_ap(det_bb, gt_bb, ini_frame, last_frame, mode):
 
     lst_gt = [item[0] for item in gt_bb]
     lst_det = [item[0] for item in det_bb]
-    # print(lst_gt)
-    # print(lst_det)
 
     AP = 0
     for f_val in range(ini_frame, last_frame):
