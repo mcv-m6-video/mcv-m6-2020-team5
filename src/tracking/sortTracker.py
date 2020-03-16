@@ -7,11 +7,11 @@ Created on Sun Mar 15 17:21:28 2020
 
 from collections import OrderedDict
 
-from .sort import sort
+# from .sort import sort
 # tracker = sort.Sort()
 import numpy as np
 
-class SortTracker(sort.Sort):
+class SortTracker():
     def __init__(self, max_age=5, min_hits=3, key = lambda x:x):
         super(SortTracker, self).__init__(max_age, min_hits)
         self.objects = OrderedDict()

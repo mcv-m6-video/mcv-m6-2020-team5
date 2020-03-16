@@ -27,7 +27,7 @@ class mot_metrics(object):
             distances = dist.cdist(np.array(gt_centr),np.array(pred_centr))
             self.acc.update(gt_ids,pred_id, distances.tolist())
         else:
-            self.acc.update(gt_ids,pred_id, [])
+            self.acc.update(gt_ids,pred_id, [[]])
         
     
     def get_metrics(self):
