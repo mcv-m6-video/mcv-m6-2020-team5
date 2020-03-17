@@ -24,11 +24,17 @@ tracker.Multi = AttrDict()
 tracker.Multi.maxDisappeared=0
 tracker.Multi.pix_tol=100
 tracker.Sort = AttrDict()
-tracker.Sort.max_age=7
-tracker.Sort.min_hits=2
+tracker.Sort.max_age=3 # max age one can have without having a hit and being deleted
+tracker.Sort.min_age=0 # min age one can have without being registered
+tracker.Sort.min_hit_streak=0 # min hits in a row to be considered valid
+tracker.Sort.life_window=0 # how many predictions a bbox can have without being ignored
 
 
 # PRINT CONFIGURATION
+display = AttrDict()
+display.iou_plot = False
+display.frames   = True
+
 pout = AttrDict()           #Print Out, to avoid re-declare "print" function
 pout.activate = True            # Whether activate or not prints
 pout.bboxes = AttrDict()
