@@ -6,7 +6,7 @@ Created on Sat Mar  7 11:39:40 2020
 """
 from .utils import AttrDict
  
-STOP_AT = 100
+STOP_AT = -1
 VISUALIZE = True
 WEIGHTS = "../weights"
 
