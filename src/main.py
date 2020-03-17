@@ -58,7 +58,7 @@ def main(new_config):
     
     # Dictionaries to compute the AP over all the frames together
     dt_rects_dict = {}
-    gt_frames_dict = {}
+    gt_rects_dict = {}
     
     # Get the values to use for training and validation
     pkl_file_train = open('../datasets/detectron2/dataset_train_' + gconf.detector.detectron.train_method + '.pkl', 'rb')
@@ -95,13 +95,13 @@ def main(new_config):
                                                              gt_frames[str(i)], 
                                                              nclasses=1)
             
-            if gconf.detector.dtype == 'detectron':
+            if gconf.detector.dtype == 'detectron' and gconf.detector.detectron.training:
                 val_img = 'frame_' + str(i) + '.jpg'
                 for dic in dataset_val:
                     if val_img == (dic['file_name'].split('/')[-1]):
                         if i > gconf.detector.backgrounds.ours.init_at:
                             dt_rects_dict[str(nval_img)] = list(dt_rects.values())
-                            gt_frames_dict[str(nval_img)] = gt_rects
+                            gt_rects_dict[str(nval_img)] = gt_rects
                             avg_precision.append(avg_precision_frame)
                             iou_history.append(iou_frame)
                             tracking_metrics.update(tracker.object_paths,gt_rects)
@@ -110,7 +110,7 @@ def main(new_config):
             else: 
                 if i > gconf.detector.backgrounds.ours.init_at:
                     dt_rects_dict[str(nval_img)] = list(dt_rects.values())
-                    gt_frames_dict[str(nval_img)] = gt_rects
+                    gt_rects_dict[str(nval_img)] = gt_rects
                     avg_precision.append(avg_precision_frame)
                     iou_history.append(iou_frame)
                     tracking_metrics.update(tracker.object_paths,gt_rects)
@@ -170,7 +170,7 @@ def main(new_config):
         else:
             break
 
-    print("mAP_allframes: {}".format(calculate_ap(dt_rects_dict, gt_frames_dict, 0, len(gt_frames_dict), 'random')))
+    print("mAP_allframes: {}".format(calculate_ap(dt_rects_dict, gt_rects_dict, 0, len(gt_rects_dict), 'random')))
     print("mIoU for all the video: ", np.mean(iou_history))
     print("mAP for all the video: ", np.mean(avg_precision))
     print(tracking_metrics.get_metrics())

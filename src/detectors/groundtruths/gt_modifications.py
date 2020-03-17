@@ -25,7 +25,7 @@ def get_truncated_normal(mean=0, sd=1, low=0, upp=10):
         (low - mean) / sd, (upp - mean) / sd, loc=mean, scale=sd)
 
 def obtain_gt(src=None, include_parked=False, include_occluded=False,
-              include_static_iou=True, IoU_func=None):
+              include_static_gt=True, IoU_func=None):
     global SOURCE
     src = src if src is not None else SOURCE
     
@@ -54,7 +54,7 @@ def obtain_gt(src=None, include_parked=False, include_occluded=False,
                     int(t_id))
             frame_list[f_id].append(area)
             
-    if(not include_static_iou):
+    if(not include_static_gt):
         frame_list_without_static = copy.deepcopy(frame_list)
  
         num_frames = np.arange(len(frame_list))

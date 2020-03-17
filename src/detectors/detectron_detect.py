@@ -45,21 +45,25 @@ class detectron_detector(object):
         if(detectron2.__version__ == "0.1"):
             if network == "retinanet":
                 self.cfg.merge_from_file(pkg_resources.resource_filename("detectron2.model_zoo", os.path.join("configs", retinanet_path)))
-                self.cfg.MODEL.WEIGHTS = model_zoo.ModelZooUrls.get(retinanet_path)
+                if not self.training:
+                    self.cfg.MODEL.WEIGHTS = model_zoo.ModelZooUrls.get(retinanet_path)
                 self.cfg.MODEL.RETINANET.SCORE_THRESH_TEST = 0.5  # set threshold for this model
                 
             if network == "faster_rcnn":
                 self.cfg.merge_from_file(pkg_resources.resource_filename("detectron2.model_zoo", os.path.join("configs", faster_rcnn_path)))
-                self.cfg.MODEL.WEIGHTS = model_zoo.ModelZooUrls.get(faster_rcnn_path)
+                if not self.training:
+                    self.cfg.MODEL.WEIGHTS = model_zoo.ModelZooUrls.get(faster_rcnn_path)
                 self.cfg.MODEL.RETINANET.SCORE_THRESH_TEST = 0.5  # set threshold for this model
         else:
             if network == "retinanet":
                 self.cfg.merge_from_file(model_zoo.get_config_file(retinanet_path))
-                self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(retinanet_path)
+                if not self.training:
+                    self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(retinanet_path)
                 self.cfg.MODEL.RETINANET.SCORE_THRESH_TEST = 0.5  # set threshold for this model
             if network == "faster_rcnn":
                 self.cfg.merge_from_file(model_zoo.get_config_file(faster_rcnn_path))
-                self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(faster_rcnn_path) 
+                if not self.training:
+                    self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(faster_rcnn_path) 
                 self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
 
             # Create predictor

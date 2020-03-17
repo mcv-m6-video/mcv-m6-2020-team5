@@ -70,6 +70,7 @@ detector.backgrounds.ours.single_channel = "GRAY"
 detector.detectron = AttrDict()
 detector.detectron.train_frames = 2140
 detector.detectron.weights_path = WEIGHTS+"/detectron.weights"
+detector.detectron.net = 'faster_rcnn' # Possible neta: retinanet, faster_rcnn
 detector.detectron.training = False
 detector.detectron.train_method = 'random' # Possible methods (so far): random, initial
 
@@ -87,7 +88,7 @@ bbox_filter.form_factor_high=10
 
 gtruth = AttrDict()
 gtruth.src = None # No hace falta cambiar este parametro
-gtruth.include_static_iou = True #funcion del sergio para descartar IoU==1
-gtruth.include_parked = True    # descartamos aquellos que tienen el atributo parked = 1
-gtruth.include_occluded = True # descartamos aquellos que tienen el atributo occluded = "true"
+gtruth.include_static_gt = True # if false, we do not use the static gt bounding boxes using IoU measure
+gtruth.include_parked = True    # if false, we do not use the static gt bounding boxes using attribute park = 1
+gtruth.include_occluded = True # if false, we do not use the gt bounding boxes using attribute occluded = "true"
 
