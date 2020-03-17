@@ -75,6 +75,7 @@ python src/main.py
 - Task 1: Object detection
     - Task 1.1: Object Detection: Off-the-Shelf
     - Task 1.2: Object Detection: Fine-tuned model
+    
 - Task 2: Object tracking
     - Task 2.1: Tracking by maximum overlap
     - Task 2.2: Tracking with a Kalman filter
@@ -83,5 +84,14 @@ python src/main.py
  ### Execution
  Copy the dataset folder into the same folder as this repository.
  
- All the tasks can be executed 
+All the tasks can be executed using the following command:
+```
+python src/main.py 
+```
+The parameters that can be modified can be found on the src/config/general.py file. For example, to run a task with a different value for the parameter weights_path we can use:
+```
+python src/main.py --general_config detector.weights_path="../new_folder/detectron.weights"
+```
+
+
  
