@@ -34,6 +34,7 @@ def obtain_gt(src=None, include_parked=False, include_occluded=False,
     frame_list = {}
     for track in gdict["annotations"]["track"]:
         t_id = track["@id"]
+        label = track["@label"]
         for box in track["box"]:
             f_id = box["@frame"]
             if(f_id not in frame_list):
@@ -51,7 +52,8 @@ def obtain_gt(src=None, include_parked=False, include_occluded=False,
                     float(box["@ytl"]),
                     float(box["@xbr"]), 
                     float(box["@ybr"]),
-                    int(t_id))
+                    int(t_id),
+                    label)            
             frame_list[f_id].append(area)
             
     if(not include_static_gt):

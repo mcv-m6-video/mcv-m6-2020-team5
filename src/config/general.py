@@ -7,10 +7,8 @@ Created on Sat Mar  7 11:39:40 2020
 from .utils import AttrDict
  
 STOP_AT = -1
-# VISUALIZE = False
+VISUALIZE = True
 WEIGHTS = "../weights"
-
-
 
 video = AttrDict()
 video.save_video = False
@@ -21,22 +19,16 @@ video.start_save = 3000
 video.duration = 3      #duration in seconds
 
 tracker = AttrDict()
-tracker.ttype = "sort" # centroid, overlap, sort
+tracker.ttype = "centroid"
 tracker.Multi = AttrDict()
 tracker.Multi.maxDisappeared=0
 tracker.Multi.pix_tol=100
 tracker.Sort = AttrDict()
-tracker.Sort.max_age=3 # max age one can have without having a hit and being deleted
-tracker.Sort.min_age=0 # min age one can have without being registered
-tracker.Sort.min_hit_streak=0 # min hits in a row to be considered valid
-tracker.Sort.life_window=0 # how many predictions a bbox can have without being ignored
+tracker.Sort.max_age=7
+tracker.Sort.min_hits=2
 
 
 # PRINT CONFIGURATION
-display = AttrDict()
-display.iou_plot = False
-display.frames   = True
-
 pout = AttrDict()           #Print Out, to avoid re-declare "print" function
 pout.activate = True            # Whether activate or not prints
 pout.bboxes = AttrDict()
@@ -65,22 +57,22 @@ plots.iou.save = False              # Save every frame of the plot
 plots.iou.n_frames = 1              # Save every N frames
 
 detector = AttrDict()
-detector.dtype = "MOG"       # Detector to use
+detector.dtype = "detectron"       # Detector to use
 detector.activate_mask = False          # Whether or not to activate the mask to discard possible noise
 detector.mask_path = "./img/scene_mask.png"  # path to the mask
 detector.backgrounds = AttrDict()
 detector.backgrounds.ours = AttrDict()
-detector.backgrounds.ours.init_at = 10 # where to init computing IoU and mAP, after training the background
+detector.backgrounds.ours.init_at = 0 # where to init computing IoU and mAP, after training the background
 detector.backgrounds.ours.alpha = 5 #Try for different values (2.5 should be good)
 detector.backgrounds.ours.rho = 0.01 #If different than 0 then adaptive
 detector.backgrounds.ours.color_space ="BGR"
 detector.backgrounds.ours.single_channel = "GRAY"
 detector.detectron = AttrDict()
-detector.detectron.train_frames = 500
+detector.detectron.train_frames = 2140
 detector.detectron.weights_path = WEIGHTS+"/detectron.weights"
 detector.detectron.net = 'faster_rcnn' # Possible neta: retinanet, faster_rcnn
 detector.detectron.training = True
-detector.detectron.train_method = 'random' # Possible methods (so far): random, initial
+detector.detectron.train_method = 'random' # Possible methods (so far): random25 (25% random), initial, random50 (50% random)
 
 bbox_filter = AttrDict()
 bbox_filter.wf_high=0.4

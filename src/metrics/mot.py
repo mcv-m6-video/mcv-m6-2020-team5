@@ -17,7 +17,7 @@ class mot_metrics(object):
         gt_ids = []
         
         for rect in gt_rect:
-            x1, y1, x2, y2, rect_id = rect
+            x1, y1, x2, y2, rect_id, _ = rect
             gt_centr.append( get_centroid([x1, y1, x2, y2]))
             gt_ids.append(rect_id)
             

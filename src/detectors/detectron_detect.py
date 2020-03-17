@@ -47,23 +47,31 @@ class detectron_detector(object):
                 self.cfg.merge_from_file(pkg_resources.resource_filename("detectron2.model_zoo", os.path.join("configs", retinanet_path)))
                 if not self.training:
                     self.cfg.MODEL.WEIGHTS = model_zoo.ModelZooUrls.get(retinanet_path)
+                else:
+                    self.cfg.MODEL.WEIGHTS = os.path.join(self.cfg.OUTPUT_DIR, 'model_final.pth')
                 self.cfg.MODEL.RETINANET.SCORE_THRESH_TEST = 0.5  # set threshold for this model
                 
             if network == "faster_rcnn":
                 self.cfg.merge_from_file(pkg_resources.resource_filename("detectron2.model_zoo", os.path.join("configs", faster_rcnn_path)))
                 if not self.training:
                     self.cfg.MODEL.WEIGHTS = model_zoo.ModelZooUrls.get(faster_rcnn_path)
+                else:
+                    self.cfg.MODEL.WEIGHTS = os.path.join(self.cfg.OUTPUT_DIR, 'model_final.pth')
                 self.cfg.MODEL.RETINANET.SCORE_THRESH_TEST = 0.5  # set threshold for this model
         else:
             if network == "retinanet":
                 self.cfg.merge_from_file(model_zoo.get_config_file(retinanet_path))
                 if not self.training:
                     self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(retinanet_path)
+                else:
+                    self.cfg.MODEL.WEIGHTS = os.path.join(self.cfg.OUTPUT_DIR, 'model_final.pth')
                 self.cfg.MODEL.RETINANET.SCORE_THRESH_TEST = 0.5  # set threshold for this model
             if network == "faster_rcnn":
                 self.cfg.merge_from_file(model_zoo.get_config_file(faster_rcnn_path))
                 if not self.training:
                     self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(faster_rcnn_path) 
+                else:
+                    self.cfg.MODEL.WEIGHTS = os.path.join(self.cfg.OUTPUT_DIR, 'model_final.pth')
                 self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
 
             # Create predictor
@@ -75,36 +83,38 @@ class detectron_detector(object):
         dataset_train, dataset_val = get_dicts(Ntraining, method)
         for d in ['train', 'val']:
             DatasetCatalog.register(d + '_set', lambda d=d: dataset_train if d == 'train' else dataset_val)
-            MetadataCatalog.get(d + '_set').set(thing_classes='Car')
+            MetadataCatalog.get(d + '_set').set(thing_classes=['Person', 'None', 'Car'])
     
     
     def train(self, training_frames, train_method):
         if(training_frames <= 0):
             raise ValueError("The number of input frames must be bigger than 0")
         
+        self.cfg.OUTPUT_DIR = ('../datasets/detectron2/' + str(train_method))
     
         self.generate_datasets(training_frames, method = train_method)
         
+        self.cfg.merge_from_file(model_zoo.get_config_file("COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml"))
         self.cfg.DATASETS.TRAIN = ('train_set',)
         self.cfg.DATASETS.TEST = ('val_set',)
-        self.cfg.OUTPUT_DIR = ('../datasets/detectron2/' + str(train_method))
-        self.cfg.DATALOADER.NUM_WORKERS = 2
-        self.cfg.SOLVER.IMS_PER_BATCH = 2
+        self.cfg.DATALOADER.NUM_WORKERS = 1
+        self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml") 
+        self.cfg.SOLVER.IMS_PER_BATCH = 1
         self.cfg.SOLVER.BASE_LR = 0.001
-        self.cfg.SOLVER.MAX_ITER = 500
-        self.cfg.SOLVER.STEPS = (300, 500)
-        self.cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 256 
-        self.cfg.MODEL.ROI_HEADS.NUM_CLASSES = 2
+        self.cfg.SOLVER.MAX_ITER = 1000
+        self.cfg.SOLVER.STEPS = (500, 1000)
+        self.cfg.MODEL.ROI_HEADS.NUM_CLASSES = 3
         
         if not os.path.isfile(os.path.join(self.cfg.OUTPUT_DIR, 'model_final.pth')):
-    
+        
+
             os.makedirs(self.cfg.OUTPUT_DIR, exist_ok=True)
             
             trainer = DefaultTrainer(self.cfg)
             trainer.resume_or_load(resume=False)
             trainer.train()
                 
-            self.cfg.MODEL.WEIGHTS = os.path.join(self.cfg.OUTPUT_DIR, 'model_final.pth')
+            # self.cfg.MODEL.WEIGHTS = os.path.join(self.cfg.OUTPUT_DIR, 'model_final.pth')
                 
         
     def predict(self,frame):
@@ -122,10 +132,11 @@ class detectron_detector(object):
         
         # Transformation to bboxes
         bboxes = []
-        boxes = outputs['instances'].to("cpu").pred_boxes.tensor.numpy()
+        boxes = outputs['instances'].to("cpu").pred_boxes.tensor.numpy(); 
         classes = outputs['instances'].to("cpu").pred_classes
+        print(classes)
         for idx in range(len(classes)):
-            if classes[idx] == 0: # Person
+            if classes[idx] == 0: # Person (or Person and Car for the fine-tuned model)
                 bboxes.append(boxes[idx])    
             if classes[idx] == 2: # Car
                 bboxes.append(boxes[idx])              
@@ -187,10 +198,15 @@ def get_dicts(N_frames, method):
             
             for coord in range(len(boxes)):
                 bbox = [float(xy) for xy in boxes[coord][0:4]]
+                label = boxes[coord][5]
+                if label == 'bike':
+                    cat_id = 0
+                if label == 'car':
+                    cat_id = 2
                 obj = {
                     "bbox": bbox,
                     "bbox_mode": BoxMode.XYXY_ABS,
-                    "category_id": 0,
+                    "category_id": cat_id,
                     "iscrowd": 0
                     }
                 objs.append(obj)
@@ -204,8 +220,22 @@ def get_dicts(N_frames, method):
 
         dataset_train = dataset_dicts
         
-        if method == 'random':
+        if method == 'random25':
             val_samples = random.sample(list(np.arange(0,N_frames,1)),int(0.25*N_frames))
+            print(val_samples)
+
+            val_img = ['frame_' + str(img) +'.jpg' for img in val_samples]
+            dataset_train = [dic for dic in dataset_dicts if not dic['file_name'].split('/')[-1] in val_img]
+            dataset_val = [dic for dic in dataset_dicts if dic['file_name'].split('/')[-1] in val_img]
+            
+            with open(annot_dir + 'detectron2/dataset_train_random.pkl', 'wb') as handle:
+                pickle.dump(dataset_train, handle)
+                
+            with open(annot_dir + 'detectron2/dataset_val_random.pkl', 'wb') as handle:
+                pickle.dump(dataset_val, handle)
+        
+        if method == 'random50':
+            val_samples = random.sample(list(np.arange(0,N_frames,1)),int(0.5*N_frames))
             print(val_samples)
 
             val_img = ['frame_' + str(img) +'.jpg' for img in val_samples]
@@ -238,5 +268,6 @@ def get_dicts(N_frames, method):
         dataset_train = pickle.load(pkl_file_train, fix_imports=True, encoding='ASCII', errors='strict')
         dataset_val = pickle.load(pkl_file_val, fix_imports=True, encoding='ASCII', errors='strict')
   
+    print(len(dataset_train))
     return dataset_train, dataset_val
     
