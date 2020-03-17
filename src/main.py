@@ -77,6 +77,11 @@ def main(new_config):
     tracker = obtain_tracker(gconf.tracker.ttype, gconf.tracker)
     i = 0
     nval_img = 0 
+    
+    if(gconf.detector.dtype == 'detectron'):
+        INIT_DISPLAY = 0
+    else:
+        INIT_DISPLAY = gconf.detector.backgrounds.ours.init_at
     while(cap.isOpened() and (not gconf.video.save_video and 
                               (gconf.STOP_AT == -1 or i <= gconf.STOP_AT) or
                               gconf.video.save_video and i <= VIDEO_END)):
@@ -146,13 +151,13 @@ def main(new_config):
                 frame = print_func(frame.copy(), gt_rects, dt_rects, bgseg, orig_bgseg, 
                                    gconf.pout, tracker)
             # cv2.imshow('Frame',frame)
-            if i > gconf.detector.backgrounds.ours.init_at:
+            if i > INIT_DISPLAY:
                 
                 f_out = frame 
                 # f_out = obtain_global_var_mean()
-                cv2.putText(frame, f"alpha={gconf.detector.backgrounds.ours.alpha}",
-                            (50,50), cv2.FONT_HERSHEY_SIMPLEX, 
-                            2,(255,255,255),6,cv2.LINE_AA)
+                # cv2.putText(frame, f"alpha={gconf.detector.backgrounds.ours.alpha}",
+                #             (50,50), cv2.FONT_HERSHEY_SIMPLEX, 
+                #             2,(255,255,255),6,cv2.LINE_AA)
                 if(gconf.video.start_save <= i <= VIDEO_END):
                     if(gconf.video.stack_iou):
                         iou_plot.build_frame(frame)
