@@ -7,8 +7,10 @@ Created on Sat Mar  7 11:39:40 2020
 from .utils import AttrDict
  
 STOP_AT = -1
-VISUALIZE = True
+# VISUALIZE = False
 WEIGHTS = "../weights"
+
+
 
 video = AttrDict()
 video.save_video = False
@@ -29,8 +31,12 @@ tracker.Sort.min_hits=2
 
 
 # PRINT CONFIGURATION
+display = AttrDict()
+display.iou_plot = False
+display.frames   = True
+
 pout = AttrDict()           #Print Out, to avoid re-declare "print" function
-pout.activate = True            # Whether activate or not prints
+pout.activate = False            # Whether activate or not prints
 pout.bboxes = AttrDict()
 pout.bboxes.activate = True     # visualize bboxes?
 pout.bboxes.gt = True           # visualize bboxes of gt?
@@ -68,10 +74,10 @@ detector.backgrounds.ours.rho = 0.01 #If different than 0 then adaptive
 detector.backgrounds.ours.color_space ="BGR"
 detector.backgrounds.ours.single_channel = "GRAY"
 detector.detectron = AttrDict()
-detector.detectron.train_frames = 2140
+detector.detectron.train_frames = 300
 detector.detectron.weights_path = WEIGHTS+"/detectron.weights"
 detector.detectron.net = 'faster_rcnn' # Possible neta: retinanet, faster_rcnn
-detector.detectron.training = False
+detector.detectron.training = True
 detector.detectron.train_method = 'random' # Possible methods (so far): random, initial
 
 bbox_filter = AttrDict()

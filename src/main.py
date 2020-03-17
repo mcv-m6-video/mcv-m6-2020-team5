@@ -34,7 +34,7 @@ SOURCE = "../datasets/AICity_data/train/S03/c010/vdo.avi"
 def main(new_config):
     gconf = obtain_general_config(gconfig=new_config)
 
-    if(gconf.VISUALIZE):
+    if(gconf.display.frames):
         w_name = 'display'
         cv2.namedWindow(w_name, cv2.WINDOW_AUTOSIZE)
     # bgsg_module = None
@@ -51,9 +51,16 @@ def main(new_config):
     tracking_metrics = mot_metrics()
     avg_precision = []
     iou_history = []
-    iou_plot = LinePlot(gconf.plots.iou.name,
-                        max_val=gconf.plots.iou.max_val,
-                        save_plots=gconf.plots.iou.save)
+
+    if(not gconf.display.iou_plot):
+        import matplotlib.pyplot as plt
+        plt.ion()
+    create_iou = gconf.display.iou_plot or gconf.plots.iou.save or \
+        gconf.video.save_video and gconf.video.stack_iou
+    if(create_iou):
+        iou_plot = LinePlot(gconf.plots.iou.name,
+                            max_val=gconf.plots.iou.max_val,
+                            save_plots=gconf.plots.iou.save)
     # mAP_plot = LinePlot("mAP_frame",max_val=350)
     
     # Dictionaries to compute the AP over all the frames together
@@ -106,7 +113,8 @@ def main(new_config):
                             iou_history.append(iou_frame)
                             tracking_metrics.update(tracker.object_paths,gt_rects)
                             nval_img += 1
-                            # iou_plot.update(iou_frame)
+                            if(create_iou):
+                                iou_plot.update(iou_frame)
             else: 
                 if i > gconf.detector.backgrounds.ours.init_at:
                     dt_rects_dict[str(nval_img)] = list(dt_rects.values())
@@ -122,7 +130,8 @@ def main(new_config):
             # if i > 1000:
             #     break
                 # iouFrame(iou_history)
-            # iou_plot.update(iou_frame)
+            if(create_iou):
+                iou_plot.update(iou_frame)
 
             # mAP_plot.update(avg_precision_frame)
             
@@ -133,8 +142,9 @@ def main(new_config):
             bgseg = None if bgsg_module is None else bgsg_module.get_bgseg()
             orig_bgseg = None if bgsg_module is None else bgsg_module.get_orig_bgseg()
 
-            frame = print_func(frame.copy(), gt_rects, dt_rects, bgseg, orig_bgseg, 
-                               gconf.pout, tracker)
+            if(gconf.pout.activate and (gconf.display.frames or gconf.video.save_video)):
+                frame = print_func(frame.copy(), gt_rects, dt_rects, bgseg, orig_bgseg, 
+                                   gconf.pout, tracker)
             # cv2.imshow('Frame',frame)
             if i > gconf.detector.backgrounds.ours.init_at:
                 
@@ -160,7 +170,8 @@ def main(new_config):
                         f_out = iou_plot.last_img
                     if(gconf.video.save_video):
                         out_cap.write(f_out.astype('uint8'))
-                cv2.imshow(w_name, f_out.astype('uint8'))
+                if(gconf.display.frames):
+                    cv2.imshow(w_name, f_out.astype('uint8'))
             
             # Press Q on keyboard to  exit
             if cv2.waitKey(1) & 0xFF == ord('q'):
