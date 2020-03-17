@@ -68,4 +68,20 @@ Change Color space inside main.py file
 ```
 python src/main.py 
 ```
+## Week 3
 
+### Tasks
+
+- Task 1: Object detection
+    - Task 1.1: Object Detection: Off-the-Shelf
+    - Task 1.2: Object Detection: Fine-tuned model
+- Task 2: Object tracking
+    - Task 2.1: Tracking by maximum overlap
+    - Task 2.2: Tracking with a Kalman filter
+    - Task 2.3: IDF1 for Multiple Object Tracking
+ 
+ ### Execution
+ Copy the dataset folder into the same folder as this repository.
+ 
+ All the tasks can be executed 
+ 
