@@ -29,6 +29,8 @@ from tracking.trackers import obtain_tracker
 
 import pickle
 
+import glob
+
 SOURCE = "../datasets/AICity_data/train/S03/c010/vdo.avi"
 
 def main(new_config):

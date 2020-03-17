@@ -25,6 +25,16 @@ import xmltodict
 
 MEAN_IMAGE = None
 
+import re
+def atoi(text):
+    return int(text) if text.isdigit() else text
+
+def natural_keys(text):
+    return [ atoi(c) for c in re.split('(\d+)',text) ]
+
+def string_sort(string_list):
+    string_list.sort(key=natural_keys)
+
 class detectron_detector(object):
     def __init__(self,train_frames = 100, weights_path=None, net="retinanet", training = 'True', train_method='random'):
         self._n_of_trainings = 0
@@ -159,7 +169,9 @@ def get_dicts(N_frames, method):
     dataset_dicts = []
     dataset_train = []
     dataset_val = []
-        
+    
+    train_dir = annot_dir + f'detectron2/dataset_train_{method}.pkl'
+    val_dir   = annot_dir + f'detectron2/dataset_val_{method}.pkl'
     if not os.path.exists(output_dir):
         vidcap = cv2.VideoCapture(filename)
         success,image = vidcap.read()
@@ -173,12 +185,14 @@ def get_dicts(N_frames, method):
             print('Read a new frame: ', count)
             count += 1
     
-    if not os.path.isfile(annot_dir + 'detectron2/dataset_train_' + str(method) + '.pkl'):
+    if not os.path.isfile(train_dir):
         
         frame_list = obtain_gt(include_parked = True)
-
+        
         frame = 0
-        for idx, img_name in tqdm(enumerate(os.listdir(output_dir)),desc='Getting dicts'):
+        image_list = os.listdir(output_dir)
+        image_list.sort(key=natural_keys)
+        for idx, img_name in tqdm(enumerate(image_list),desc='Getting dicts'):
             boxes = frame_list[str(idx)]
 
             record = {}
@@ -222,52 +236,43 @@ def get_dicts(N_frames, method):
         
         if method == 'random25':
             val_samples = random.sample(list(np.arange(0,N_frames,1)),int(0.25*N_frames))
-            print(val_samples)
-
-            val_img = ['frame_' + str(img) +'.jpg' for img in val_samples]
-            dataset_train = [dic for dic in dataset_dicts if not dic['file_name'].split('/')[-1] in val_img]
-            dataset_val = [dic for dic in dataset_dicts if dic['file_name'].split('/')[-1] in val_img]
-            
-            with open(annot_dir + 'detectron2/dataset_train_random.pkl', 'wb') as handle:
-                pickle.dump(dataset_train, handle)
-                
-            with open(annot_dir + 'detectron2/dataset_val_random.pkl', 'wb') as handle:
-                pickle.dump(dataset_val, handle)
-        
-        if method == 'random50':
+            # print(val_samples)
+        elif method == 'random50':
             val_samples = random.sample(list(np.arange(0,N_frames,1)),int(0.5*N_frames))
-            print(val_samples)
-
-            val_img = ['frame_' + str(img) +'.jpg' for img in val_samples]
-            dataset_train = [dic for dic in dataset_dicts if not dic['file_name'].split('/')[-1] in val_img]
-            dataset_val = [dic for dic in dataset_dicts if dic['file_name'].split('/')[-1] in val_img]
-            
-            with open(annot_dir + 'detectron2/dataset_train_random.pkl', 'wb') as handle:
-                pickle.dump(dataset_train, handle)
-                
-            with open(annot_dir + 'detectron2/dataset_val_random.pkl', 'wb') as handle:
-                pickle.dump(dataset_val, handle)
-        
-        if method == 'initial':
+            # print(val_samples)
+        elif method == 'initial':
             val_samples = list(np.arange(int(0.25 * N_frames)))
 
-            val_img = ['frame_' + str(img) +'.jpg' for img in val_samples]
-            dataset_train = [dic for dic in dataset_dicts if not dic['file_name'].split('/')[-1] in val_img]
-            dataset_val = [dic for dic in dataset_dicts if dic['file_name'].split('/')[-1] in val_img]
+        val_img = ['frame_' + str(img) +'.jpg' for img in val_samples]
+        dataset_train = [dic for dic in dataset_dicts if not dic['file_name'].split('/')[-1] in val_img]
+        dataset_val = [dic for dic in dataset_dicts if dic['file_name'].split('/')[-1] in val_img]
+        
+        with open(train_dir, 'wb') as handle:
+            pickle.dump(dataset_train, handle)
             
-            with open(annot_dir + 'detectron2/dataset_train_initial.pkl', 'wb') as handle:
-                pickle.dump(dataset_train, handle)
-                
-            with open(annot_dir + 'detectron2/dataset_val_initial.pkl', 'wb') as handle:
-                pickle.dump(dataset_val, handle)
+        with open(val_dir, 'wb') as handle:
+            pickle.dump(dataset_val, handle)
     
     else:
-        pkl_file_train = open(annot_dir + 'detectron2/dataset_train_' + str(method) + '.pkl', 'rb')
-        pkl_file_val = open(annot_dir + 'detectron2/dataset_val_' + str(method) + '.pkl', 'rb')
+        pkl_file_train = open(train_dir, 'rb')
+        pkl_file_val = open(val_dir, 'rb')
 
         dataset_train = pickle.load(pkl_file_train, fix_imports=True, encoding='ASCII', errors='strict')
         dataset_val = pickle.load(pkl_file_val, fix_imports=True, encoding='ASCII', errors='strict')
   
     print(len(dataset_train))
     return dataset_train, dataset_val
+
+if __name__ == "__main__":
+    
+    import os
+    fpaths = "/home/dazmer/Workspace/marinav/mcv-m6-2020-team5/datasets/frames"
+    fpaths_list = os.listdir(fpaths)
+    
+    print(fpaths_list)
+    
+    # my_list =['Hello1', 'Hello12', 'Hello29', 'Hello2', 'Hello17', 'Hello25']
+    fpaths_list.sort(key=natural_keys)
+    print(fpaths_list)
+    
     

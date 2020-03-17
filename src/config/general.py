@@ -78,7 +78,7 @@ detector.detectron.train_frames = 2140
 detector.detectron.weights_path = WEIGHTS+"/detectron.weights"
 detector.detectron.net = 'faster_rcnn' # Possible neta: retinanet, faster_rcnn
 detector.detectron.training = True
-detector.detectron.train_method = 'random' # Possible methods (so far): random25 (25% random), initial, random50 (50% random)
+detector.detectron.train_method = 'initial' # Possible methods (so far): random25 (25% random), initial, random50 (50% random)
 
 bbox_filter = AttrDict()
 bbox_filter.wf_high=0.4
