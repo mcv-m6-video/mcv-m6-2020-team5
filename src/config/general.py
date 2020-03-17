@@ -6,7 +6,7 @@ Created on Sat Mar  7 11:39:40 2020
 """
 from .utils import AttrDict
  
-STOP_AT = -1
+STOP_AT = 100
 VISUALIZE = True
 WEIGHTS = "../weights"
 
@@ -70,6 +70,7 @@ detector.backgrounds.ours.single_channel = "GRAY"
 detector.detectron = AttrDict()
 detector.detectron.train_frames = 2140
 detector.detectron.weights_path = WEIGHTS+"/detectron.weights"
+detector.detectron.training = False
 detector.detectron.train_method = 'random' # Possible methods (so far): random, initial
 
 bbox_filter = AttrDict()

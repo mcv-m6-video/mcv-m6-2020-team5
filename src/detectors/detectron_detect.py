@@ -26,10 +26,10 @@ import xmltodict
 MEAN_IMAGE = None
 
 class detectron_detector(object):
-    def __init__(self,train_frames = 100, weights_path=None, net="retinanet", train_method='random'):
+    def __init__(self,train_frames = 100, weights_path=None, net="retinanet", training = 'True', train_method='random'):
         self._n_of_trainings = 0
         self.thr_n_of_training = train_frames
-        self.training = True
+        self.training = training
         self.tmp_train_frames = []
         self.method_train = train_method
         self.weights_path = weights_path

@@ -69,6 +69,7 @@ def main(new_config):
     
     tracker = obtain_tracker(gconf.tracker.ttype, gconf.tracker)
     i = 0
+    nval_img = 0 
     while(cap.isOpened() and (not gconf.video.save_video and 
                               (gconf.STOP_AT == -1 or i <= gconf.STOP_AT) or
                               gconf.video.save_video and i <= VIDEO_END)):
@@ -99,19 +100,21 @@ def main(new_config):
                 for dic in dataset_val:
                     if val_img == (dic['file_name'].split('/')[-1]):
                         if i > gconf.detector.backgrounds.ours.init_at:
-                            dt_rects_dict[str(i)] = list(dt_rects.values())
-                            gt_frames_dict[str(i)] = gt_frames[str(i)]
+                            dt_rects_dict[str(nval_img)] = list(dt_rects.values())
+                            gt_frames_dict[str(nval_img)] = gt_rects
                             avg_precision.append(avg_precision_frame)
                             iou_history.append(iou_frame)
                             tracking_metrics.update(tracker.object_paths,gt_rects)
+                            nval_img += 1
                             # iou_plot.update(iou_frame)
             else: 
                 if i > gconf.detector.backgrounds.ours.init_at:
-                    dt_rects_dict[str(i)] = list(dt_rects.values())
-                    gt_frames_dict[str(i)] = gt_frames[str(i)]
+                    dt_rects_dict[str(nval_img)] = list(dt_rects.values())
+                    gt_frames_dict[str(nval_img)] = gt_rects
                     avg_precision.append(avg_precision_frame)
                     iou_history.append(iou_frame)
                     tracking_metrics.update(tracker.object_paths,gt_rects)
+                    nval_img += 1
             
             #Print Graph
           
