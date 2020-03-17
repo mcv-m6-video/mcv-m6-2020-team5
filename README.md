@@ -3,7 +3,7 @@ Team 5
 
 ## Contributors
 
-| Dani Azemar | Richard Segovia |  Sergi Solà |   Sergio Casasa  |
+| Dani Azemar | Richard Segovia |  Sergi Solà |   Sergio Casas  |
 |-------------|-----------------|-------------|------------------|
 |  hamddan4   |   richardseba   | sergiisolaa | sergiocasaspastor|
 
@@ -88,7 +88,7 @@ All the tasks can be executed using the following command:
 ```
 python src/main.py 
 ```
-The parameters that can be modified can be found on the src/config/general.py file. For example, to run a task with a different value for the parameter weights_path we can use:
+The parameters that can be modified can be found on the src/config/general.py file. The values for that parameters can be modified using a command in the terminal. For example, to run a task with a different value for the parameter weights_path we can use:
 ```
 python src/main.py --general_config detector.weights_path="../new_folder/detectron.weights"
 ```
