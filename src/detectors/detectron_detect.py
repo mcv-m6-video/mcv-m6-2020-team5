@@ -86,15 +86,15 @@ class detectron_detector(object):
         self.generate_datasets(training_frames, method = train_method)
         
         self.cfg.DATASETS.TRAIN = ('train_set',)
-        self.cfg.DATASETS.TEST = ('test_set',)
+        self.cfg.DATASETS.TEST = ('val_set',)
         self.cfg.OUTPUT_DIR = ('../datasets/detectron2/' + str(train_method))
         self.cfg.DATALOADER.NUM_WORKERS = 2
         self.cfg.SOLVER.IMS_PER_BATCH = 2
         self.cfg.SOLVER.BASE_LR = 0.001
-        self.cfg.SOLVER.MAX_ITER = 3000
-        self.cfg.SOLVER.STEPS = (1000, 3000)
+        self.cfg.SOLVER.MAX_ITER = 500
+        self.cfg.SOLVER.STEPS = (300, 500)
         self.cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 256 
-        self.cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1
+        self.cfg.MODEL.ROI_HEADS.NUM_CLASSES = 2
         
         if not os.path.isfile(os.path.join(self.cfg.OUTPUT_DIR, 'model_final.pth')):
     
@@ -104,7 +104,7 @@ class detectron_detector(object):
             trainer.resume_or_load(resume=False)
             trainer.train()
                 
-            self.cfg.MODEL.WEIGHTS = os.path.join(self.cfg.OUTPUT_DIR, 'model_final_' + '.pth')
+            self.cfg.MODEL.WEIGHTS = os.path.join(self.cfg.OUTPUT_DIR, 'model_final.pth')
                 
         
     def predict(self,frame):

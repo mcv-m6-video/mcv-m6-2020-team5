@@ -21,13 +21,15 @@ video.start_save = 3000
 video.duration = 3      #duration in seconds
 
 tracker = AttrDict()
-tracker.ttype = "centroid"
+tracker.ttype = "sort" # centroid, overlap, sort
 tracker.Multi = AttrDict()
-tracker.Multi.maxDisappeared=1
+tracker.Multi.maxDisappeared=0
 tracker.Multi.pix_tol=100
 tracker.Sort = AttrDict()
-tracker.Sort.max_age=7
-tracker.Sort.min_hits=2
+tracker.Sort.max_age=3 # max age one can have without having a hit and being deleted
+tracker.Sort.min_age=0 # min age one can have without being registered
+tracker.Sort.min_hit_streak=0 # min hits in a row to be considered valid
+tracker.Sort.life_window=0 # how many predictions a bbox can have without being ignored
 
 
 # PRINT CONFIGURATION
@@ -63,7 +65,7 @@ plots.iou.save = False              # Save every frame of the plot
 plots.iou.n_frames = 1              # Save every N frames
 
 detector = AttrDict()
-detector.dtype = "detectron"       # Detector to use
+detector.dtype = "MOG"       # Detector to use
 detector.activate_mask = False          # Whether or not to activate the mask to discard possible noise
 detector.mask_path = "./img/scene_mask.png"  # path to the mask
 detector.backgrounds = AttrDict()
