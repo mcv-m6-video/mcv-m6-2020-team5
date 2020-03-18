@@ -78,3 +78,4 @@ def calculate_ap(det_bb, gt_bb, ini_frame, last_frame, mode):
             
     AP = AP / last_frame
     return AP
+

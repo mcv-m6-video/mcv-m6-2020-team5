@@ -26,6 +26,7 @@ from detectors.backgrounds.single_gaussian import obtain_global_var_mean
 from utils.bbfilters import bbfilters
 from metrics.map_all_frames import calculate_ap
 from tracking.trackers import obtain_tracker
+from tqdm import tqdm 
 
 import pickle
 
@@ -46,9 +47,9 @@ def main(new_config):
     out_cap = None
     cap = cv2.VideoCapture(SOURCE)
 
-    detect_func, bgsg_module = obtain_detector(**gconf.detector)
-
     gt_frames = obtain_gt(**gconf.gtruth, IoU_func=IoU)
+    detect_func, bgsg_module = obtain_detector(**gconf.detector, gt_frames=gt_frames)
+
     
     tracking_metrics = mot_metrics()
     avg_precision = []
@@ -75,6 +76,7 @@ def main(new_config):
 
     dataset_train = pickle.load(pkl_file_train, fix_imports=True, encoding='ASCII', errors='strict')
     dataset_val = pickle.load(pkl_file_val, fix_imports=True, encoding='ASCII', errors='strict')
+    imgs_in_dataset_val = [d['file_name'].split('/')[-1] for d in dataset_val]
     
     tracker = obtain_tracker(gconf.tracker.ttype, gconf.tracker)
     i = 0
@@ -84,14 +86,16 @@ def main(new_config):
         INIT_DISPLAY = 0
     else:
         INIT_DISPLAY = gconf.detector.backgrounds.ours.init_at
+    # pbar = tqdm(total=2140)
     while(cap.isOpened() and (not gconf.video.save_video and 
                               (gconf.STOP_AT == -1 or i <= gconf.STOP_AT) or
                               gconf.video.save_video and i <= VIDEO_END)):
         # Capture frame-by-frame
         ret, frame = cap.read()
+        # pbar.update()
         if ret == True:
             #predict over the frame
-            print("Frame: ", i)
+            # print("Frame: ", i)
             # rects = detect_func(frame)
             
             #Retrack over the frame
@@ -110,26 +114,26 @@ def main(new_config):
                                                              nclasses=1)
             
             if gconf.detector.dtype == 'detectron' and gconf.detector.detectron.training:
-                val_img = 'frame_' + str(i) + '.jpg'
-                for dic in dataset_val:
-                    if val_img == (dic['file_name'].split('/')[-1]):
-                        if i > gconf.detector.backgrounds.ours.init_at:
-                            dt_rects_dict[str(nval_img)] = list(dt_rects.values())
-                            gt_rects_dict[str(nval_img)] = gt_rects
-                            avg_precision.append(avg_precision_frame)
-                            iou_history.append(iou_frame)
-                            tracking_metrics.update(tracker.object_paths,gt_rects)
-                            nval_img += 1
-                            if(create_iou):
-                                iou_plot.update(iou_frame)
-            else: 
-                if i > gconf.detector.backgrounds.ours.init_at:
-                    dt_rects_dict[str(nval_img)] = list(dt_rects.values())
-                    gt_rects_dict[str(nval_img)] = gt_rects
+                if (f"frame_{i}.jpg" in imgs_in_dataset_val):
+                # for dic in dataset_val:
+                #     if val_img == (dic['file_name'].split('/')[-1]):
+                #         if i > gconf.detector.backgrounds.ours.init_at:
+                    dt_rects_dict[str(i)] = list(dt_rects.values())
+                    gt_rects_dict[str(i)] = gt_rects
                     avg_precision.append(avg_precision_frame)
                     iou_history.append(iou_frame)
                     tracking_metrics.update(tracker.object_paths,gt_rects)
-                    nval_img += 1
+                # nval_img += 1
+                # if(create_iou):
+                #     iou_plot.update(iou_frame)
+            else: 
+                # if i > gconf.detector.backgrounds.ours.init_at:
+                    dt_rects_dict[str(i)] = list(dt_rects.values())
+                    gt_rects_dict[str(i)] = gt_rects
+                    avg_precision.append(avg_precision_frame)
+                    iou_history.append(iou_frame)
+                    tracking_metrics.update(tracker.object_paths,gt_rects)
+                    # nval_img += 1
             
             #Print Graph
           
@@ -198,10 +202,22 @@ def main(new_config):
     
     
 if __name__ == "__main__":
-    new_gconfig = []
     parser = general_parser()
     args = parser.parse_args()
+    new_gconfig = []
+    configs_jj = []
+    # configs_jj.append(["tracker.ttype=sort","tracker.Sort.max_age=1"])
+    # configs_jj.append(["tracker.ttype=sort","tracker.Sort.maxDisappeared=1"])
+    # configs_jj.append(["tracker.ttype=sort","tracker.Sort.max_age=3"])
+    # configs_jj.append(["tracker.ttype=sort","tracker.Sort.maxDisappeared=3"])
+    # configs_jj.append(["tracker.ttype=sort","tracker.Sort.max_age=5"])
+    # configs_jj.append(["tracker.ttype=sort","tracker.Sort.maxDisappeared=5"])
+    # configs_jj.append(["tracker.ttype=sort","tracker.Sort.max_age=6"])
     if args.general_config is not None:
         new_gconfig.extend(args.general_config)
+    # for c in configs_jj:
+        # c.extend(["detector.detectron.net=faster_rcnn"])
+        # print(c)
     main(new_gconfig)
+        # print("------")
     

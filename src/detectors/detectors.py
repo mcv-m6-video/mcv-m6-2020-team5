@@ -52,7 +52,8 @@ def obtain_bgseg_detector(dtype, activate_mask=True, mask_path=True, init_at=10,
     return f, bgsg_module
             
 def obtain_detector(dtype=None, activate_mask=None, 
-                    mask_path=None, backgrounds = {}, detectron = {}):
+                    mask_path=None, backgrounds = {}, detectron = {},
+                    gt_frames=None):
     bgsg_module = None
     all_detector_names = _DET_BACKGROUNDS + list(detectors_dict.keys()) + _NN_DETECTORS
     if(dtype not in all_detector_names):
@@ -63,7 +64,7 @@ def obtain_detector(dtype=None, activate_mask=None,
                                               **backgrounds.ours)
     if(dtype == "detectron"):
         import detectors.detectron_detect as dt
-        dclass = dt.detectron_detector(**detectron)
+        dclass = dt.detectron_detector(**detectron, gt_frames=gt_frames)
         func_detector = dclass.predict
     if(dtype in detectors_dict.keys()):
         func_detector = detectors_dict[dtype]

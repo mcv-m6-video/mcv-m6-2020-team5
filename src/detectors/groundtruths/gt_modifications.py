@@ -25,7 +25,7 @@ def get_truncated_normal(mean=0, sd=1, low=0, upp=10):
         (low - mean) / sd, (upp - mean) / sd, loc=mean, scale=sd)
 
 def obtain_gt(src=None, include_parked=False, include_occluded=False,
-              include_static_gt=True, IoU_func=None):
+              include_static_gt=True, labels=["car","bike"], IoU_func=None):
     global SOURCE
     src = src if src is not None else SOURCE
     
@@ -35,6 +35,8 @@ def obtain_gt(src=None, include_parked=False, include_occluded=False,
     for track in gdict["annotations"]["track"]:
         t_id = track["@id"]
         label = track["@label"]
+        if(label not in labels):
+            continue
         for box in track["box"]:
             f_id = box["@frame"]
             if(f_id not in frame_list):

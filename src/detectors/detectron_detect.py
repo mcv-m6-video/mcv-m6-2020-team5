@@ -35,8 +35,12 @@ def natural_keys(text):
 def string_sort(string_list):
     string_list.sort(key=natural_keys)
 
+label2id =  {"car":0, "bike":1}
+id2label = {v: k for k, v in label2id.items()}
+
 class detectron_detector(object):
-    def __init__(self,train_frames = 100, weights_path=None, net="retinanet", training = 'True', train_method='random'):
+    def __init__(self,train_frames = 100, weights_path=None, net="retinanet", 
+                 training = 'True', train_method='random', objects=["bike","car"], gt_frames=None):
         self._n_of_trainings = 0
         self.thr_n_of_training = train_frames
         self.training = training
@@ -44,11 +48,12 @@ class detectron_detector(object):
         self.method_train = train_method
         self.weights_path = weights_path
         self.cfg = get_cfg()
-        self.predictor = self.__initialize_network(net)
+        self.predictor = self.__initialize_network(net, gt_frames)
+        self.dobjects = objects
         
-    def __initialize_network(self,network):
+    def __initialize_network(self,network, gt_frames):
         if self.training:
-            self.train(self.thr_n_of_training, self.method_train) 
+            self.train(self.thr_n_of_training, self.method_train, gt_frames) 
         retinanet_path = "COCO-Detection/retinanet_R_101_FPN_3x.yaml"
         faster_rcnn_path = "COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml"
         
@@ -89,20 +94,20 @@ class detectron_detector(object):
     
     
         
-    def generate_datasets(self, Ntraining, method):
-        dataset_train, dataset_val = get_dicts(Ntraining, method)
+    def generate_datasets(self, Ntraining, method, gt_frames):
+        dataset_train, dataset_val = get_dicts(Ntraining, method, gt_frames)
         for d in ['train', 'val']:
             DatasetCatalog.register(d + '_set', lambda d=d: dataset_train if d == 'train' else dataset_val)
             MetadataCatalog.get(d + '_set').set(thing_classes=['Person', 'None', 'Car'])
     
     
-    def train(self, training_frames, train_method):
+    def train(self, training_frames, train_method,gtruth_config):
         if(training_frames <= 0):
             raise ValueError("The number of input frames must be bigger than 0")
         
         self.cfg.OUTPUT_DIR = ('../datasets/detectron2/' + str(train_method))
     
-        self.generate_datasets(training_frames, method = train_method)
+        self.generate_datasets(training_frames,train_method,gtruth_config)
         
         self.cfg.merge_from_file(model_zoo.get_config_file("COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml"))
         self.cfg.DATASETS.TRAIN = ('train_set',)
@@ -113,7 +118,7 @@ class detectron_detector(object):
         self.cfg.SOLVER.BASE_LR = 0.001
         self.cfg.SOLVER.MAX_ITER = 1000
         self.cfg.SOLVER.STEPS = (500, 1000)
-        self.cfg.MODEL.ROI_HEADS.NUM_CLASSES = 3
+        self.cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1
         
         if not os.path.isfile(os.path.join(self.cfg.OUTPUT_DIR, 'model_final.pth')):
         
@@ -144,13 +149,11 @@ class detectron_detector(object):
         bboxes = []
         boxes = outputs['instances'].to("cpu").pred_boxes.tensor.numpy(); 
         classes = outputs['instances'].to("cpu").pred_classes
-        print(classes)
+        # print(classes)
         for idx in range(len(classes)):
-            if classes[idx] == 0: # Person (or Person and Car for the fine-tuned model)
-                bboxes.append(boxes[idx])    
-            if classes[idx] == 2: # Car
+            iD = int(classes[idx])
+            if iD in id2label and id2label[iD] in self.dobjects: # Person
                 bboxes.append(boxes[idx])              
-
         return bboxes
     
 
@@ -158,13 +161,13 @@ def obtain_global_var_mean():
     global MEAN_IMAGE
     return np.dstack([MEAN_IMAGE]*3)
 
-def get_dicts(N_frames, method):
+def get_dicts(N_frames, method, gt_frames):
     img_dir="../datasets/AICity_data/train/S03/c010" 
     annot_dir="../datasets/"
     output_dir="../datasets/frames/"
     
     filename = os.path.join(img_dir, "vdo.avi")
-    annotname = os.path.join(annot_dir, "ai_challenge_s03_c010-full_annotation.xml")
+    # annotname = os.path.join(annot_dir, "ai_challenge_s03_c010-full_annotation.xml")
 
     dataset_dicts = []
     dataset_train = []
@@ -187,7 +190,7 @@ def get_dicts(N_frames, method):
     
     if not os.path.isfile(train_dir):
         
-        frame_list = obtain_gt(include_parked = True)
+        frame_list = gt_frames
         
         frame = 0
         image_list = os.listdir(output_dir)
@@ -205,18 +208,15 @@ def get_dicts(N_frames, method):
             record["width"] = width
             
             #Refer les annotations
-            with open(annotname, "rb") as fd:
-                gdict = xmltodict.parse(fd)
+            # with open(annotname, "rb") as fd:
+            #     gdict = xmltodict.parse(fd)
 
             objs = []
             
             for coord in range(len(boxes)):
                 bbox = [float(xy) for xy in boxes[coord][0:4]]
                 label = boxes[coord][5]
-                if label == 'bike':
-                    cat_id = 0
-                if label == 'car':
-                    cat_id = 2
+                cat_id = label2id[label]
                 obj = {
                     "bbox": bbox,
                     "bbox_mode": BoxMode.XYXY_ABS,
