@@ -124,7 +124,7 @@ def main(new_config):
                     gt_rects_dict[str(i)] = gt_rects
                     avg_precision.append(avg_precision_frame)
                     iou_history.append(iou_frame)
-                    tracking_metrics.update(tracker.object_paths,gt_rects)
+                tracking_metrics.update(tracker.object_paths,gt_rects)
                         # nval_img += 1
 
                 # if i > 1000:
