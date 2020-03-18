@@ -86,107 +86,95 @@ def main(new_config):
         INIT_DISPLAY = 0
     else:
         INIT_DISPLAY = gconf.detector.backgrounds.ours.init_at
-    # pbar = tqdm(total=2140)
+    pbar = tqdm(total=2140)
     while(cap.isOpened() and (not gconf.video.save_video and 
                               (gconf.STOP_AT == -1 or i <= gconf.STOP_AT) or
                               gconf.video.save_video and i <= VIDEO_END)):
         # Capture frame-by-frame
         ret, frame = cap.read()
-        # pbar.update()
+        pbar.update()
         if ret == True:
-            #predict over the frame
-            # print("Frame: ", i)
-            # rects = detect_func(frame)
-            
-            #Retrack over the frame
-            gt_rects = gt_frames[str(i)]
-            
-            
-            #Classify the result
-            dt_rects = detect_func(frame)
-            dt_rects, _ = bbfilters(dt_rects, frame, **gconf.bbox_filter)
-            dt_rects = tracker.update(dt_rects)
-            #Obtain GT
-            
-            #Compute the metrics
-            avg_precision_frame, iou_frame = getMetricsClass(list(dt_rects.values()), 
-                                                             gt_frames[str(i)], 
-                                                             nclasses=1)
-            
-            if gconf.detector.dtype == 'detectron' and gconf.detector.detectron.training:
-                if (f"frame_{i}.jpg" in imgs_in_dataset_val):
-                # for dic in dataset_val:
-                #     if val_img == (dic['file_name'].split('/')[-1]):
-                #         if i > gconf.detector.backgrounds.ours.init_at:
-                    dt_rects_dict[str(i)] = list(dt_rects.values())
-                    gt_rects_dict[str(i)] = gt_rects
-                    avg_precision.append(avg_precision_frame)
-                    iou_history.append(iou_frame)
-                    tracking_metrics.update(tracker.object_paths,gt_rects)
-                # nval_img += 1
-                # if(create_iou):
-                #     iou_plot.update(iou_frame)
-            else: 
-                # if i > gconf.detector.backgrounds.ours.init_at:
-                    dt_rects_dict[str(i)] = list(dt_rects.values())
-                    gt_rects_dict[str(i)] = gt_rects
-                    avg_precision.append(avg_precision_frame)
-                    iou_history.append(iou_frame)
-                    tracking_metrics.update(tracker.object_paths,gt_rects)
-                    # nval_img += 1
-            
-            #Print Graph
-          
+            if( i > gconf.START_PROCESSING_AT ):
 
-            # if i > 1000:
-            #     break
-                # iouFrame(iou_history)
-            if(create_iou):
-                iou_plot.update(iou_frame)
-
-            # mAP_plot.update(avg_precision_frame)
-            
-            #Print Results
-            ## prepare data
-
-            
-            bgseg = None if bgsg_module is None else bgsg_module.get_bgseg()
-            orig_bgseg = None if bgsg_module is None else bgsg_module.get_orig_bgseg()
-
-            if(gconf.pout.activate and (gconf.display.frames or gconf.video.save_video)):
-                frame = print_func(frame.copy(), gt_rects, dt_rects, bgseg, orig_bgseg, 
-                                   gconf.pout, tracker)
-            # cv2.imshow('Frame',frame)
-            if i > INIT_DISPLAY:
+                #predict over the frame
+                dt_rects = detect_func(frame)
                 
-                f_out = frame 
-                # f_out = obtain_global_var_mean()
-                # cv2.putText(frame, f"alpha={gconf.detector.backgrounds.ours.alpha}",
-                #             (50,50), cv2.FONT_HERSHEY_SIMPLEX, 
-                #             2,(255,255,255),6,cv2.LINE_AA)
-                if(gconf.video.start_save <= i <= VIDEO_END):
-                    if(gconf.video.stack_iou):
-                        iou_plot.build_frame(frame)
-                    if(gconf.video.save_video):
-                        if(out_cap is None):
-                            if(gconf.video.stack_iou):
-                                fshape = iou_plot.last_img.shape
-                            else:
-                                fshape = f_out.shape
-                            out_cap = cv2.VideoWriter(gconf.video.fname, 
-                                                      cv2.VideoWriter_fourcc(*"MJPG"), 
-                                                      gconf.video.fps, 
-                                                      (fshape[1],fshape[0]))
-                    if(gconf.video.stack_iou):
-                        f_out = iou_plot.last_img
-                    if(gconf.video.save_video):
-                        out_cap.write(f_out.astype('uint8'))
-                if(gconf.display.frames):
-                    cv2.imshow(w_name, f_out.astype('uint8'))
-            
-            # Press Q on keyboard to  exit
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+                #filter results
+                dt_rects, _ = bbfilters(dt_rects, frame, **gconf.bbox_filter)
+                
+                #Retrack over the frame
+                dt_rects = tracker.update(dt_rects)
+                                
+                #Obtain GT
+                gt_rects = gt_frames[str(i)]
+                
+                #Compute the metrics
+                avg_precision_frame, iou_frame = getMetricsClass(list(dt_rects.values()), 
+                                                                 gt_frames[str(i)], 
+                                                                 nclasses=1)
+                compute_metric = False
+                if gconf.detector.dtype == 'detectron' and gconf.detector.detectron.training:
+                    if (f"frame_{i}.jpg" in imgs_in_dataset_val):
+                        compute_metric = True
+                else: 
+                    compute_metric = True
+                if(compute_metric):
+                    dt_rects_dict[str(i)] = list(dt_rects.values())
+                    gt_rects_dict[str(i)] = gt_rects
+                    avg_precision.append(avg_precision_frame)
+                    iou_history.append(iou_frame)
+                    tracking_metrics.update(tracker.object_paths,gt_rects)
+                        # nval_img += 1
+
+                # if i > 1000:
+                #     break
+                    # iouFrame(iou_history)
+                if(create_iou):
+                    iou_plot.update(iou_frame)
+
+                # mAP_plot.update(avg_precision_frame)
+                
+                #Print Results
+                ## prepare data
+
+                
+                bgseg = None if bgsg_module is None else bgsg_module.get_bgseg()
+                orig_bgseg = None if bgsg_module is None else bgsg_module.get_orig_bgseg()
+
+                if(gconf.pout.activate and (gconf.display.frames or gconf.video.save_video)):
+                    frame = print_func(frame.copy(), gt_rects, dt_rects, bgseg, orig_bgseg, 
+                                    gconf.pout, tracker)
+                # cv2.imshow('Frame',frame)
+                if i > INIT_DISPLAY:
+                    
+                    f_out = frame 
+                    # f_out = obtain_global_var_mean()
+                    # cv2.putText(frame, f"alpha={gconf.detector.backgrounds.ours.alpha}",
+                    #             (50,50), cv2.FONT_HERSHEY_SIMPLEX, 
+                    #             2,(255,255,255),6,cv2.LINE_AA)
+                    if(gconf.video.start_save <= i <= VIDEO_END):
+                        if(gconf.video.stack_iou):
+                            iou_plot.build_frame(frame)
+                        if(gconf.video.save_video):
+                            if(out_cap is None):
+                                if(gconf.video.stack_iou):
+                                    fshape = iou_plot.last_img.shape
+                                else:
+                                    fshape = f_out.shape
+                                out_cap = cv2.VideoWriter(gconf.video.fname, 
+                                                        cv2.VideoWriter_fourcc(*"MJPG"), 
+                                                        gconf.video.fps, 
+                                                        (fshape[1],fshape[0]))
+                        if(gconf.video.stack_iou):
+                            f_out = iou_plot.last_img
+                        if(gconf.video.save_video):
+                            out_cap.write(f_out.astype('uint8'))
+                    if(gconf.display.frames):
+                        cv2.imshow(w_name, f_out.astype('uint8'))
+                
+                # Press Q on keyboard to  exit
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
             i+=1
         # Break the loop
         else:
