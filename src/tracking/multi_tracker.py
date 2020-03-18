@@ -76,6 +76,7 @@ def check_img_diff(obj, old_img, new_img, obtain_bounding):
 class MultiTracker():
     def __init__(self, ttype, maxDisappeared=50, key=lambda x:x, get_patch=None,
                  update_obj = lambda old, new: new, pix_tol=500,
+                 iou_threshold=0,
                  status_save=False, status_time_recover=("00:30:00"),
                  status_fpath="track_status{}.pkl"):
         # initialize the next unique object ID along with two ordered
@@ -86,7 +87,7 @@ class MultiTracker():
         self.objects = OrderedDict()
         self.disappeared = OrderedDict()
         self.object_paths = OrderedDict()
-        
+        self.iou_threshold = iou_threshold
         self.ttype = ttype
         
         # store the number of maximum consecutive frames a given
@@ -231,7 +232,7 @@ class MultiTracker():
                 # val
                 if row in usedRows or col in usedCols:
                     continue
-                if self.ttype == "overlap" and D[row][col] >= 1:
+                if self.ttype == "overlap" and D[row][col] >= (1-self.iou_threshold):
                     continue
                 if centroid_dist[row][col] > self.pixel_tolerance:
                     continue

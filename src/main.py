@@ -196,7 +196,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
     new_gconfig = []
     configs_jj = []
-    # configs_jj.append(["tracker.ttype=sort","tracker.Sort.max_age=1"])
+    # configs_jj.append(["tracker.ttype=sort","tracker.Sort.max_age=0"])
+    # configs_jj.append(["tracker.ttype=sort","tracker.Sort.max_age=2"])
+    # configs_jj.append(["tracker.ttype=sort","tracker.Sort.max_age=4"])
+    # configs_jj.append(["tracker.ttype=sort","tracker.Sort.max_age=6"])
     # configs_jj.append(["tracker.ttype=sort","tracker.Sort.maxDisappeared=1"])
     # configs_jj.append(["tracker.ttype=sort","tracker.Sort.max_age=3"])
     # configs_jj.append(["tracker.ttype=sort","tracker.Sort.maxDisappeared=3"])
@@ -206,8 +209,8 @@ if __name__ == "__main__":
     if args.general_config is not None:
         new_gconfig.extend(args.general_config)
     # for c in configs_jj:
-        # c.extend(["detector.detectron.net=faster_rcnn"])
-        # print(c)
+    #     c.extend(["detector.detectron.net=faster_rcnn"])
+    #     print(c)
     main(new_gconfig)
         # print("------")
     

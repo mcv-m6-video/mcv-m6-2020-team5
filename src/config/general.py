@@ -20,16 +20,17 @@ video.start_save = 3000
 video.duration = 3      #duration in seconds
 
 tracker = AttrDict()
-tracker.ttype = "overlap"
+tracker.ttype = "sort"
 tracker.Multi = AttrDict()
 tracker.Multi.maxDisappeared=0
 tracker.Multi.pix_tol=100
+tracker.Multi.iou_threshold=0.1
 tracker.Sort = AttrDict()
 tracker.Sort.max_age=3 # max age one can have without having a hit and being deleted
 tracker.Sort.min_age=0 # min age one can have without being registered
 tracker.Sort.min_hit_streak=0 # min hits in a row to be considered valid
 tracker.Sort.life_window=None # how many predictions a bbox can have without being ignored. None= same as max_age
-tracker.Sort.iou_threshold=0.1
+tracker.Sort.iou_threshold=0.00001
 
 # PRINT CONFIGURATION
 display = AttrDict()
