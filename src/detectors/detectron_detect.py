@@ -134,9 +134,9 @@ class detectron_detector(object):
             trainer.resume_or_load(resume=False)
             trainer.train()
             
-            evaluator = COCOEvaluator("val_set", self.cfg, False, output_dir=self.cfg.OUTPUT_DIR)
-            trainer.test(self.cfg, trainer.model, evaluators=[evaluator])
-                
+            # evaluator = COCOEvaluator("val_set", self.cfg, False, output_dir=self.cfg.OUTPUT_DIR)
+            # trainer.test(self.cfg, trainer.model, evaluators=[evaluator])
+            trainer.test(self.cfg, trainer.model)  
             # self.cfg.MODEL.WEIGHTS = os.path.join(self.cfg.OUTPUT_DIR, 'model_final.pth')
                 
         

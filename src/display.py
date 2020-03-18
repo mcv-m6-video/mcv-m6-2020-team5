@@ -27,7 +27,7 @@ def print_single_path(path, frame,  color=(0,255,0)):
      for index, item in enumerate(path[:-1]): 
         cv2.line(frame, item, path[index + 1], color, 4)    
         
-def print_func(frame, gt_rects, dt_rects, bgseg, bgseg_o, config, tracking):
+def print_func(frame, gt_rects, dt_rects,o_dt_rects, bgseg, bgseg_o, config, tracking):
     if(gt_rects is not None):
         for gtrect in gt_rects:
             if(config.bboxes.activate):
@@ -41,11 +41,15 @@ def print_func(frame, gt_rects, dt_rects, bgseg, bgseg_o, config, tracking):
             frame = print_mask_overlap(frame, bgseg, 
                                config.bgseg.alpha, 
                                config.bgseg.color)
+    for dtrect_o in o_dt_rects:
+        if(config.bboxes.dt_o):
+            print_rect(frame, dtrect_o, config.bboxes.dt_o_color)        
+
+
     for dt_id, dtrect in dt_rects.items():
         if(config.bboxes.dt):
             print_rect(frame, dtrect, config.bboxes.dt_color)
         if(config.paths.activate):
             print_single_path(tracking.object_paths[dt_id], frame, config.paths.color)
-
 
     return frame

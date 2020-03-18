@@ -101,6 +101,7 @@ def main(new_config):
                 
                 #filter results
                 dt_rects, _ = bbfilters(dt_rects, frame, **gconf.bbox_filter)
+                orig_dt_rects = dt_rects.copy()
                 
                 #Retrack over the frame
                 dt_rects = tracker.update(dt_rects)
@@ -142,8 +143,9 @@ def main(new_config):
                 orig_bgseg = None if bgsg_module is None else bgsg_module.get_orig_bgseg()
 
                 if(gconf.pout.activate and (gconf.display.frames or gconf.video.save_video)):
-                    frame = print_func(frame.copy(), gt_rects, dt_rects, bgseg, orig_bgseg, 
-                                    gconf.pout, tracker)
+                    frame = print_func(frame.copy(), gt_rects, dt_rects, 
+                                       orig_dt_rects, bgseg, orig_bgseg, 
+                                       gconf.pout, tracker)
                 # cv2.imshow('Frame',frame)
                 if i > INIT_DISPLAY:
                     
@@ -180,7 +182,7 @@ def main(new_config):
         else:
             break
 
-    print("mAP_allframes: {}".format(calculate_ap(dt_rects_dict, gt_rects_dict, 0, len(gt_rects_dict), 'random')))
+    # print("mAP_allframes: {}".format(calculate_ap(dt_rects_dict, gt_rects_dict, 0, len(gt_rects_dict), 'random')))
     print("mIoU for all the video: ", np.mean(iou_history))
     print("mAP for all the video: ", np.mean(avg_precision))
     print(tracking_metrics.get_metrics())
