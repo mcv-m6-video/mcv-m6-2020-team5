@@ -36,7 +36,7 @@ def natural_keys(text):
 def string_sort(string_list):
     string_list.sort(key=natural_keys)
 
-label2id =  {"car":2, "bike":0}
+label2id =  {"car":0, "bike":1}
 id2label = {v: k for k, v in label2id.items()}
 
 class detectron_detector(object):
@@ -105,7 +105,7 @@ class detectron_detector(object):
         if(training_frames <= 0):
             raise ValueError("The number of input frames must be bigger than 0")
         
-        self.cfg.OUTPUT_DIR = ('../datasets/detectron2/' + str(train_method))
+        self.cfg.OUTPUT_DIR = (f'../datasets/detectron2/{network}_{train_method}')
     
         self.generate_datasets(training_frames,train_method,gtruth_config)
         
@@ -134,7 +134,7 @@ class detectron_detector(object):
             trainer.resume_or_load(resume=False)
             trainer.train()
             
-            evaluator = COCOEvaluator("val_set", self.cfg, False, output_dir='../datasets/detectron2/' + str(train_method))
+            evaluator = COCOEvaluator("val_set", self.cfg, False, output_dir=self.cfg.OUTPUT_DIR)
             trainer.test(self.cfg, trainer.model, evaluators=[evaluator])
                 
             # self.cfg.MODEL.WEIGHTS = os.path.join(self.cfg.OUTPUT_DIR, 'model_final.pth')
