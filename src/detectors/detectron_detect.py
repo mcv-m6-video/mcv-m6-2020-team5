@@ -14,6 +14,7 @@ from detectron2.utils.visualizer import Visualizer
 from detectron2.data.catalog import DatasetCatalog
 from detectron2.data import MetadataCatalog
 from detectron2.structures import BoxMode
+from detectron2.evaluation import COCOEvaluator, inference_on_dataset
 import cv2
 from detectors.groundtruths.gt_modifications import obtain_gt
 from tqdm import tqdm
@@ -48,7 +49,7 @@ class detectron_detector(object):
         
     def __initialize_network(self,network):
         if self.training:
-            self.train(self.thr_n_of_training, self.method_train) 
+            self.train(self.thr_n_of_training, self.method_train, network) 
         retinanet_path = "COCO-Detection/retinanet_R_101_FPN_3x.yaml"
         faster_rcnn_path = "COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml"
         
@@ -86,8 +87,7 @@ class detectron_detector(object):
 
             # Create predictor
         return DefaultPredictor(self.cfg)
-    
-    
+      
         
     def generate_datasets(self, Ntraining, method):
         dataset_train, dataset_val = get_dicts(Ntraining, method)
@@ -95,8 +95,8 @@ class detectron_detector(object):
             DatasetCatalog.register(d + '_set', lambda d=d: dataset_train if d == 'train' else dataset_val)
             MetadataCatalog.get(d + '_set').set(thing_classes=['Person', 'None', 'Car'])
     
-    
-    def train(self, training_frames, train_method):
+     
+    def train(self, training_frames, train_method, network):
         if(training_frames <= 0):
             raise ValueError("The number of input frames must be bigger than 0")
         
@@ -104,11 +104,16 @@ class detectron_detector(object):
     
         self.generate_datasets(training_frames, method = train_method)
         
-        self.cfg.merge_from_file(model_zoo.get_config_file("COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml"))
+        if network == 'faster_rcnn':
+            self.cfg.merge_from_file(model_zoo.get_config_file("COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml"))
+            self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml") 
+        if network == 'retinanet':
+            self.cfg.merge_from_file(model_zoo.get_config_file("COCO-Detection/retinanet_R_101_FPN_3x.yaml"))
+            self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("COCO-Detection/retinanet_R_101_FPN_3x.yaml") 
+
         self.cfg.DATASETS.TRAIN = ('train_set',)
         self.cfg.DATASETS.TEST = ('val_set',)
         self.cfg.DATALOADER.NUM_WORKERS = 1
-        self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml") 
         self.cfg.SOLVER.IMS_PER_BATCH = 1
         self.cfg.SOLVER.BASE_LR = 0.001
         self.cfg.SOLVER.MAX_ITER = 1000
@@ -123,6 +128,9 @@ class detectron_detector(object):
             trainer = DefaultTrainer(self.cfg)
             trainer.resume_or_load(resume=False)
             trainer.train()
+            
+            evaluator = COCOEvaluator("val_set", self.cfg, False, output_dir='../datasets/detectron2/' + str(train_method))
+            trainer.test(self.cfg, trainer.model, evaluators=[evaluator])
                 
             # self.cfg.MODEL.WEIGHTS = os.path.join(self.cfg.OUTPUT_DIR, 'model_final.pth')
                 
@@ -172,6 +180,7 @@ def get_dicts(N_frames, method):
     
     train_dir = annot_dir + f'detectron2/dataset_train_{method}.pkl'
     val_dir   = annot_dir + f'detectron2/dataset_val_{method}.pkl'
+    
     if not os.path.exists(output_dir):
         vidcap = cv2.VideoCapture(filename)
         success,image = vidcap.read()
@@ -190,8 +199,10 @@ def get_dicts(N_frames, method):
         frame_list = obtain_gt(include_parked = True)
         
         frame = 0
+        
         image_list = os.listdir(output_dir)
         image_list.sort(key=natural_keys)
+        
         for idx, img_name in tqdm(enumerate(image_list),desc='Getting dicts'):
             boxes = frame_list[str(idx)]
 
@@ -236,10 +247,10 @@ def get_dicts(N_frames, method):
         
         if method == 'random25':
             val_samples = random.sample(list(np.arange(0,N_frames,1)),int(0.25*N_frames))
-            # print(val_samples)
+        
         elif method == 'random50':
             val_samples = random.sample(list(np.arange(0,N_frames,1)),int(0.5*N_frames))
-            # print(val_samples)
+        
         elif method == 'initial':
             val_samples = list(np.arange(int(0.25 * N_frames)))
 
@@ -251,8 +262,7 @@ def get_dicts(N_frames, method):
             pickle.dump(dataset_train, handle)
             
         with open(val_dir, 'wb') as handle:
-            pickle.dump(dataset_val, handle)
-    
+            pickle.dump(dataset_val, handle)    
     else:
         pkl_file_train = open(train_dir, 'rb')
         pkl_file_val = open(val_dir, 'rb')
@@ -262,17 +272,4 @@ def get_dicts(N_frames, method):
   
     print(len(dataset_train))
     return dataset_train, dataset_val
-
-if __name__ == "__main__":
-    
-    import os
-    fpaths = "/home/dazmer/Workspace/marinav/mcv-m6-2020-team5/datasets/frames"
-    fpaths_list = os.listdir(fpaths)
-    
-    print(fpaths_list)
-    
-    # my_list =['Hello1', 'Hello12', 'Hello29', 'Hello2', 'Hello17', 'Hello25']
-    fpaths_list.sort(key=natural_keys)
-    print(fpaths_list)
-    
-    
+   
