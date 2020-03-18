@@ -108,13 +108,23 @@ class detectron_detector(object):
         self.cfg.OUTPUT_DIR = (f'../datasets/detectron2/{network}_{train_method}')
     
         self.generate_datasets(training_frames,train_method,gtruth_config)
-        
-        if network == 'faster_rcnn':
-            self.cfg.merge_from_file(model_zoo.get_config_file("COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml"))
-            self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml") 
-        if network == 'retinanet':
-            self.cfg.merge_from_file(model_zoo.get_config_file("COCO-Detection/retinanet_R_101_FPN_3x.yaml"))
-            self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("COCO-Detection/retinanet_R_101_FPN_3x.yaml") 
+            
+        retinanet_path = "COCO-Detection/retinanet_R_101_FPN_3x.yaml"
+        faster_rcnn_path = "COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml"
+        if(detectron2.__version__ == "0.1"):
+            if network == 'faster_rcnn':
+                self.cfg.merge_from_file(pkg_resources.resource_filename("detectron2.model_zoo", os.path.join("configs", faster_rcnn_path)))
+                self.cfg.MODEL.WEIGHTS = model_zoo.ModelZooUrls.get(faster_rcnn_path)
+            if network == 'retinanet':
+                self.cfg.merge_from_file(pkg_resources.resource_filename("detectron2.model_zoo", os.path.join("configs", retinanet_path)))
+                self.cfg.MODEL.WEIGHTS = model_zoo.ModelZooUrls.get(retinanet_path)
+        else:
+            if network == 'faster_rcnn':
+                self.cfg.merge_from_file(model_zoo.get_config_file(faster_rcnn_path))
+                self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(faster_rcnn_path) 
+            if network == 'retinanet':
+                self.cfg.merge_from_file(model_zoo.get_config_file(retinanet_path))
+                self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(retinanet_path) 
 
         self.cfg.DATASETS.TRAIN = ('train_set',)
         self.cfg.DATASETS.TEST = ('val_set',)
