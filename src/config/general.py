@@ -20,11 +20,11 @@ video.start_save = 3000
 video.duration = 3      #duration in seconds
 
 tracker = AttrDict()
-tracker.ttype = "sort"
+tracker.ttype = "overlap"
 tracker.Multi = AttrDict()
-tracker.Multi.maxDisappeared=0
+tracker.Multi.maxDisappeared=6
 tracker.Multi.pix_tol=100
-tracker.Multi.iou_threshold=0.1
+tracker.Multi.iou_threshold=0
 tracker.Sort = AttrDict()
 tracker.Sort.max_age=3 # max age one can have without having a hit and being deleted
 tracker.Sort.min_age=0 # min age one can have without being registered

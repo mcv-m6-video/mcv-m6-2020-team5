@@ -246,17 +246,17 @@ def get_dicts(N_frames, method, gt_frames):
         dataset_train = dataset_dicts
         
         if method == 'random25':
-            val_samples = random.sample(list(np.arange(0,N_frames,1)),int(0.25*N_frames))
+            train_samples = random.sample(list(np.arange(0,N_frames,1)),int(0.25*N_frames))
         
         elif method == 'random50':
-            val_samples = random.sample(list(np.arange(0,N_frames,1)),int(0.5*N_frames))
+            train_samples = random.sample(list(np.arange(0,N_frames,1)),int(0.5*N_frames))
         
         elif method == 'initial':
-            val_samples = list(np.arange(int(0.25 * N_frames)))
+            train_samples = list(np.arange(int(0.25 * N_frames)))
 
-        val_img = ['frame_' + str(img) +'.jpg' for img in val_samples]
-        dataset_train = [dic for dic in dataset_dicts if not dic['file_name'].split('/')[-1] in val_img]
-        dataset_val = [dic for dic in dataset_dicts if dic['file_name'].split('/')[-1] in val_img]
+        train_names = [f'frame_{i}.jpg' for i in train_samples]
+        dataset_train = [dic for dic in dataset_dicts if dic['file_name'].split('/')[-1] in train_names]
+        dataset_val = [dic for dic in dataset_dicts if not dic['file_name'].split('/')[-1] in train_names]
         
         with open(train_dir, 'wb') as handle:
             pickle.dump(dataset_train, handle)
