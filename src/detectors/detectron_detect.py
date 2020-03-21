@@ -36,9 +36,6 @@ def natural_keys(text):
 def string_sort(string_list):
     string_list.sort(key=natural_keys)
 
-label2id =  {"car":0, "bike":1}
-id2label = {v: k for k, v in label2id.items()}
-
 class detectron_detector(object):
     def __init__(self,train_frames = 100, weights_path=None, net="retinanet", 
                  training = 'True', train_method='random', objects=["bike","car"], gt_frames=None):
@@ -167,10 +164,17 @@ class detectron_detector(object):
         bboxes = []
         boxes = outputs['instances'].to("cpu").pred_boxes.tensor.numpy(); 
         classes = outputs['instances'].to("cpu").pred_classes
+        
+        if self.training:
+            label2id =  {"car":0, "bike":1}
+        else:
+            label2id =  {"car":2, "bike":0}
+        
+        id2label = {v: k for k, v in label2id.items()}
         # print(classes)
         for idx in range(len(classes)):
             iD = int(classes[idx])
-            if iD in id2label and id2label[iD] in self.dobjects: # Person
+            if iD in id2label and id2label[iD] in self.dobjects:
                 bboxes.append(boxes[idx])              
         return bboxes
     
@@ -257,10 +261,10 @@ def get_dicts(N_frames, method, gt_frames):
         
         if method == 'random25':
             train_samples = random.sample(list(np.arange(0,N_frames,1)),int(0.25*N_frames))
+        
         elif method == 'random50':
             train_samples = random.sample(list(np.arange(0,N_frames,1)),int(0.5*N_frames))
-        elif method == 'random75':
-            train_samples = random.sample(list(np.arange(0,N_frames,1)),int(0.5*N_frames))        
+        
         elif method == 'initial':
             train_samples = list(np.arange(int(0.25 * N_frames)))
 

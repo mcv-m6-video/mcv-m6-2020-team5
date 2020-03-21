@@ -110,9 +110,9 @@ def main(new_config):
                 gt_rects = gt_frames[str(i)]
                 
                 #Compute the metrics
-                avg_precision_frame, iou_frame = getMetricsClass(list(dt_rects.values()), 
-                                                                 gt_rects, 
-                                                                 nclasses=1)
+                # avg_precision_frame, iou_frame = getMetricsClass(list(dt_rects.values()), 
+                #                                                  gt_frames[str(i)], 
+                #                                                  nclasses=1)
                 compute_metric = False
                 if gconf.detector.dtype == 'detectron' and gconf.detector.detectron.training:
                     if (f"frame_{i}.jpg" in imgs_in_dataset_val):
@@ -120,18 +120,19 @@ def main(new_config):
                 else: 
                     compute_metric = True
                 if(compute_metric):
-                    dt_rects_dict[str(i)] = list(dt_rects.values())
-                    gt_rects_dict[str(i)] = gt_rects
-                    avg_precision.append(avg_precision_frame)
-                    iou_history.append(iou_frame)
+                    dt_rects_dict[str(nval_img)] = list(dt_rects.values())
+                    gt_rects_dict[str(nval_img)] = gt_rects
+                    # avg_precision.append(avg_precision_frame)
+                    # iou_history.append(iou_frame)
+                    nval_img += 1
+
                 tracking_metrics.update(tracker.object_paths,gt_rects)
-                        # nval_img += 1
 
                 # if i > 1000:
                 #     break
                     # iouFrame(iou_history)
-                if(create_iou):
-                    iou_plot.update(iou_frame)
+                # if(create_iou):
+                #     iou_plot.update(iou_frame)
 
                 # mAP_plot.update(avg_precision_frame)
                 
@@ -182,9 +183,9 @@ def main(new_config):
         else:
             break
 
-    # print("mAP_allframes: {}".format(calculate_ap(dt_rects_dict, gt_rects_dict, 0, len(gt_rects_dict), 'random')))
-    print("mIoU for all the video: ", np.mean(iou_history))
-    print("mAP for all the video: ", np.mean(avg_precision))
+    mAP, mIoU = calculate_ap(dt_rects_dict, gt_rects_dict, 0, len(gt_rects_dict), 'random')
+    print("mAP: ", mAP)
+    print("mIoU: ", mIoU)
     print(tracking_metrics.get_metrics())
     cap.release()
     if(gconf.video.save_video):
