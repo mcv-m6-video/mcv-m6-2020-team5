@@ -27,6 +27,7 @@ from utils.bbfilters import bbfilters
 from metrics.map_all_frames import calculate_ap
 from tracking.trackers import obtain_tracker
 from tqdm import tqdm 
+from collections import OrderedDict
 
 import pickle
 
@@ -125,8 +126,14 @@ def main(new_config):
                     # avg_precision.append(avg_precision_frame)
                     # iou_history.append(iou_frame)
                     nval_img += 1
-
-                tracking_metrics.update(tracker.object_paths,gt_rects)
+                    
+                # Tracking for this frame
+                dt_track = OrderedDict()
+                for dt_id, dtrect in dt_rects.items():
+                    dt_track.update({dt_id: tracker.object_paths[dt_id]})
+                
+                tracking_metrics.update(dt_track,gt_rects)
+    
 
                 # if i > 1000:
                 #     break
@@ -186,7 +193,9 @@ def main(new_config):
     mAP, mIoU = calculate_ap(dt_rects_dict, gt_rects_dict, 0, len(gt_rects_dict), 'random')
     print("mAP: ", mAP)
     print("mIoU: ", mIoU)
+    
     print(tracking_metrics.get_metrics())
+    
     cap.release()
     if(gconf.video.save_video):
         out_cap.release()

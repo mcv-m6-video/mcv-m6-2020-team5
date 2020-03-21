@@ -24,7 +24,7 @@ class mot_metrics(object):
         pred_centr = [c[-1] for c in new_track.values()]
         pred_id = [c for c in new_track]
         if( len(pred_centr) > 0 and len(gt_centr) > 0 ):
-            distances = mm.distances.norm2squared_matrix(gt_centr, pred_centr, max_d2=5.)
+            distances = mm.distances.norm2squared_matrix(gt_centr, pred_centr, max_d2=10.)
             self.acc.update(gt_ids,pred_id, distances.tolist())
         else:
             self.acc.update(gt_ids,pred_id, [[]])
