@@ -21,6 +21,7 @@ def frame_AP(n_gt, f_det_bb, frame_gt_bb):
     tp = []
     precision = []
     recall = []
+    best_ious = []
     for f_det in f_det_bb[0]:
         ious = []
         correct = False
@@ -32,9 +33,10 @@ def frame_AP(n_gt, f_det_bb, frame_gt_bb):
             iou = IoU(f_det, f_gt)
             ious.append(iou)
 
-        arg_max = np.argmax(ious)
-        if ious[arg_max] > 0.5:
-            frame_gt_bb[0].pop(arg_max)
+        iou_bb = np.argmax(ious)
+        best_ious.append(ious[iou_bb])
+        if ious[iou_bb] > 0.5:
+            frame_gt_bb[0].pop(iou_bb)
             correct = True
 
         tp.append(correct)
@@ -43,7 +45,7 @@ def frame_AP(n_gt, f_det_bb, frame_gt_bb):
         recall.append(tp.count(True) / n_gt)
 
     ap = calc_AP(precision, recall)
-    return ap
+    return ap, np.mean(best_ious)
 
 
 def calculate_ap(det_bb, gt_bb, ini_frame, last_frame, mode):
@@ -52,9 +54,10 @@ def calculate_ap(det_bb, gt_bb, ini_frame, last_frame, mode):
     lst_det = [item[0] for item in det_bb]
 
     AP = 0
+    IoU = 0
     for f_val in range(ini_frame, last_frame):
         frame_gt_bb = list([gt_bb[str(i)] for i, num in enumerate(lst_gt) if i == f_val])
-        n_gt = len(frame_gt_bb)
+        n_gt = len(frame_gt_bb[0])
         frame_det_bb = list([det_bb[str(i)] for i, num in enumerate(lst_det) if i == f_val])
 
         if mode == 'sort':
@@ -65,17 +68,21 @@ def calculate_ap(det_bb, gt_bb, ini_frame, last_frame, mode):
             
             #Random shuffle
             f_ap = 0
+            f_iou = 0
             for i in range(0, 10):
                 shuffle(frame_det_bb)
-                a = frame_AP(n_gt, copy.deepcopy(frame_det_bb), copy.deepcopy(frame_gt_bb))
-                f_ap = f_ap + a
+                AP_frame, iou_frame = frame_AP(n_gt, copy.deepcopy(frame_det_bb), copy.deepcopy(frame_gt_bb))
+                f_ap = f_ap + AP_frame
+                f_iou = f_iou + iou_frame
             AP = AP + f_ap / 10
-            
+            IoU = IoU + f_iou / 10
+                  
         else:
             #Sorted by area
             frame_det_bb = sorted(frame_det_bb, key=lambda x: (x[5]-x[3])*(x[5]-x[3]), reverse=True)
             AP = AP + frame_AP(n_gt, frame_det_bb, frame_gt_bb)
             
     AP = AP / last_frame
-    return AP
+    IoU = IoU / last_frame
+    return AP, IoU
 
