@@ -1,9 +1,11 @@
 import cv2
 import numpy as np
 from decode import decode_optical_flow
-from visualization import color_flow,arrow_flow
+from visualization import colorflow_white,arrow_flow
 import matplotlib.pyplot as plt
-
+from coarse2fine_flow import coarse2fine_flow
+from interpolation.horn_schunck import opticalFlowHS, opticalFlowHSPyr
+from interpolation.tvl1 import tvl1_simple, opticalFlowTVL1Pyr
 
 def flowmetrics(pred_flow, gt_flow, valid_flow, thres = 3):
     
@@ -23,34 +25,60 @@ def flowmetrics(pred_flow, gt_flow, valid_flow, thres = 3):
     return msen,pepn
 
 def main():
-    img_paths = ["/Users/sergi/mcv-m6-2020-team5/datasets/results/LKflow_000045_10.png",
-                 "/Users/sergi/mcv-m6-2020-team5/datasets/results/LKflow_000157_10.png"]
+    
+    
+    method = ['block_matching', 'coarse2fine', 'DenseCV', 'HS', 'TVL']
+    
+    sel_method = 2
+    pyr = True
     
     gt_paths = ["/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/noc_000045_10.png",
                 "/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/noc_000157_10.png"]
     
-    real_paths = ["/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/000045_10.png",
-                "/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/000157_10.png"]
-    
-    select_image = 1 #0: image 1, 1: image 2
+    select_image = 0 #0: image 1, 2: image 2
     
     
+    if select_image == 0:
+        im1 = cv2.imread("/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/000045_10.png", cv2.IMREAD_UNCHANGED )
+        im2 = cv2.imread("/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/000045_11.png", cv2.IMREAD_UNCHANGED )
+    elif select_image == 1:
+        im1 = cv2.imread("/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/000157_10.png", cv2.IMREAD_UNCHANGED )
+        im2 = cv2.imread("/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/000157_11.png", cv2.IMREAD_UNCHANGED )
     
-    im = cv2.imread(img_paths[select_image], cv2.IMREAD_UNCHANGED )
     gt = cv2.imread(gt_paths[select_image], cv2.IMREAD_UNCHANGED)
-
-    flow_im,valid_flow = decode_optical_flow(im)
+    
+    
+    #flow_im,valid_flow = decode_optical_flow(im)
     flow_gt, val_gt_flow = decode_optical_flow(gt)
     
-    color_plot = color_flow(flow_im)
+    #Como llamar al Block Matching
+    if sel_method == 1:
+        flow, im_warped = coarse2fine_flow(im1,im2)
+    elif sel_method == 2:
+        flow = cv2.calcOpticalFlowFarneback(im1,im2, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+    elif sel_method == 3:
+        if pyr == True:
+            flow = opticalFlowHSPyr(im1,im2)
+        else:
+            flow = opticalFlowHS(im1,im2)
+    elif sel_method == 4:
+        if pyr == True:
+            flow = tvl1_simple(im1,im2)
+        else:
+            flow = opticalFlowTVL1Pyr(im1,im2)
+    else:
+        print("El método seleccionado no es válido.")            
+        
+        
+    color_plot = colorflow_white(flow)
     cv2.imshow("color_plot",color_plot)
     cv2.waitKey(1)
     
-    real_im = cv2.imread(real_paths[select_image], cv2.IMREAD_UNCHANGED)
-    arrow_flow(flow_im,real_im)
+    
+    arrow_flow(flow,im1)
     
     ##metrics
-    msen, pepn = flowmetrics(flow_im, flow_gt, val_gt_flow)
+    msen, pepn = flowmetrics(flow, flow_gt, val_gt_flow)
     
     print('MSEN')
     print(msen)

@@ -5,10 +5,6 @@ import cv2
 import time
 import visualization
 
-im1 = cv2.imread("../datasets/of_pred/000045_10.png")
-im2 = cv2.imread("../datasets/of_pred/000045_11.png")
-im1 = im1.astype(float) / 255.
-im2 = im2.astype(float) / 255.
 
 # Flow Options:
 alpha = 0.012
@@ -42,8 +38,8 @@ def coarse2fine_flow(im1,im2):
 
 
 if __name__ == "__main__":
-    image1_path = "../datasets/of_pred/000045_10.png"
-    image2_path = "../datasets/of_pred/000045_11.png"
+    image1_path = "/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/000045_10.png"
+    image2_path = "/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/000045_11.png"
     
     im1 = cv2.imread(image1_path, cv2.IMREAD_GRAYSCALE)
     im2 = cv2.imread(image2_path, cv2.IMREAD_GRAYSCALE)
