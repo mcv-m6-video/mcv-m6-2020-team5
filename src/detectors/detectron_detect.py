@@ -257,10 +257,10 @@ def get_dicts(N_frames, method, gt_frames):
         
         if method == 'random25':
             train_samples = random.sample(list(np.arange(0,N_frames,1)),int(0.25*N_frames))
-        
         elif method == 'random50':
             train_samples = random.sample(list(np.arange(0,N_frames,1)),int(0.5*N_frames))
-        
+        elif method == 'random75':
+            train_samples = random.sample(list(np.arange(0,N_frames,1)),int(0.5*N_frames))        
         elif method == 'initial':
             train_samples = list(np.arange(int(0.25 * N_frames)))
 

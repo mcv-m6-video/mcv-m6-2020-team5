@@ -111,7 +111,7 @@ def main(new_config):
                 
                 #Compute the metrics
                 avg_precision_frame, iou_frame = getMetricsClass(list(dt_rects.values()), 
-                                                                 gt_frames[str(i)], 
+                                                                 gt_rects, 
                                                                  nclasses=1)
                 compute_metric = False
                 if gconf.detector.dtype == 'detectron' and gconf.detector.detectron.training:
