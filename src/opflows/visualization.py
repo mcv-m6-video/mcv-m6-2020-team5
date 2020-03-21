@@ -7,18 +7,30 @@ import matplotlib.pyplot as plt
 # def filter_null_flow(vec):
 #     for i in range()
 
-def color_flow(vects):
-    w,h = vects.shape[:2]
-    hsv = np.zeros((w,h,3))
-    hsv[...,1] = 255
-    mag, ang = cv2.cartToPolar(vects[...,0], vects[...,1])
-    hsv[...,0] = ang*180/np.pi/2
-    hsv[...,2] = cv2.normalize(mag,None,0,255,cv2.NORM_MINMAX)
-    hsv = hsv.astype(np.uint8)
-    rgb = cv2.cvtColor(hsv,cv2.COLOR_HSV2BGR)
-    rgb = cv2.cvtColor(rgb,cv2.COLOR_BGR2RGB)
-    # rgb = rgb.astype(np.uint8)
+def colorflow_black(flow):
+    w,h = flow.shape[:2]
+    hsv = np.zeros((w,h,3), dtype=np.uint8)
+    hsv[:, :, 0] = 255
+    hsv[:, :, 1] = 255
+    mag, ang = cv2.cartToPolar(flow[..., 0], flow[..., 1])
+    hsv[..., 0] = ang * 180 / np.pi / 2
+    hsv[..., 2] = cv2.normalize(mag, None, 0, 255, cv2.NORM_MINMAX)
+    rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+
     return rgb
+
+def colorflow_white(flow):
+    w,h = flow.shape[:2]
+    hsv = np.ones((w,h,3), dtype=np.uint8)*255
+
+    mag, ang = cv2.cartToPolar(flow[..., 0], flow[..., 1])
+    
+    hsv[..., 0] = ang * 180 / np.pi / 2
+    hsv[..., 1] = cv2.normalize(mag, None, 0, 255, cv2.NORM_MINMAX)
+    rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+
+    return rgb
+
 
 def arrow_flow(vects,im):
     scale = 4

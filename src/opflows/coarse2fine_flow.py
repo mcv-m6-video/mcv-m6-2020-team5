@@ -40,17 +40,6 @@ def coarse2fine_flow(im1,im2):
     
     return flow, im_warped
 
-def plotflow(flow):
-    w,h = flow.shape[:2]
-    hsv = np.zeros((w,h,3), dtype=np.uint8)
-    hsv[:, :, 0] = 255
-    hsv[:, :, 1] = 255
-    mag, ang = cv2.cartToPolar(flow[..., 0], flow[..., 1])
-    hsv[..., 0] = ang * 180 / np.pi / 2
-    hsv[..., 2] = cv2.normalize(mag, None, 0, 255, cv2.NORM_MINMAX)
-    rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
-
-    return rgb
 
 if __name__ == "__main__":
     image1_path = "../datasets/of_pred/000045_10.png"
@@ -60,11 +49,11 @@ if __name__ == "__main__":
     im2 = cv2.imread(image2_path, cv2.IMREAD_GRAYSCALE)
     
     flow, im_warped = coarse2fine_flow(im1,im2)
+
+    rgb_flow1 = visualization.colorflow_black(flow)
+    rgb_flow2 = visualization.colorflow_white(flow)
     
-    rgb_flow = plotflow(flow)
-    # rgb_flow2 = visualization.color_flow(flow)
-    
-    cv2.imshow("nuevo",rgb_flow)
+    cv2.imshow("nuevo",rgb_flow1)
     cv2.imshow("nuevo2",rgb_flow2)
     cv2.imshow("im_warped",im_warped)
     cv2.waitKey()
