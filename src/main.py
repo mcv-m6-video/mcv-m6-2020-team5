@@ -27,6 +27,7 @@ from utils.bbfilters import bbfilters
 from metrics.map_all_frames import calculate_ap
 from tracking.trackers import obtain_tracker
 from tqdm import tqdm 
+from collections import OrderedDict
 
 import pickle
 
@@ -110,9 +111,9 @@ def main(new_config):
                 gt_rects = gt_frames[str(i)]
                 
                 #Compute the metrics
-                avg_precision_frame, iou_frame = getMetricsClass(list(dt_rects.values()), 
-                                                                 gt_rects, 
-                                                                 nclasses=1)
+                # avg_precision_frame, iou_frame = getMetricsClass(list(dt_rects.values()), 
+                #                                                  gt_frames[str(i)], 
+                #                                                  nclasses=1)
                 compute_metric = False
                 if gconf.detector.dtype == 'detectron' and gconf.detector.detectron.training:
                     if (f"frame_{i}.jpg" in imgs_in_dataset_val):
@@ -120,18 +121,25 @@ def main(new_config):
                 else: 
                     compute_metric = True
                 if(compute_metric):
-                    dt_rects_dict[str(i)] = list(dt_rects.values())
-                    gt_rects_dict[str(i)] = gt_rects
-                    avg_precision.append(avg_precision_frame)
-                    iou_history.append(iou_frame)
-                tracking_metrics.update(tracker.object_paths,gt_rects)
-                        # nval_img += 1
+                    dt_rects_dict[str(nval_img)] = list(dt_rects.values())
+                    gt_rects_dict[str(nval_img)] = gt_rects
+                    # avg_precision.append(avg_precision_frame)
+                    # iou_history.append(iou_frame)
+                    nval_img += 1
+                    
+                # Tracking for this frame
+                dt_track = OrderedDict()
+                for dt_id, dtrect in dt_rects.items():
+                    dt_track.update({dt_id: tracker.object_paths[dt_id]})
+                
+                tracking_metrics.update(dt_track,gt_rects)
+    
 
                 # if i > 1000:
                 #     break
                     # iouFrame(iou_history)
-                if(create_iou):
-                    iou_plot.update(iou_frame)
+                # if(create_iou):
+                #     iou_plot.update(iou_frame)
 
                 # mAP_plot.update(avg_precision_frame)
                 
@@ -182,10 +190,12 @@ def main(new_config):
         else:
             break
 
-    # print("mAP_allframes: {}".format(calculate_ap(dt_rects_dict, gt_rects_dict, 0, len(gt_rects_dict), 'random')))
-    print("mIoU for all the video: ", np.mean(iou_history))
-    print("mAP for all the video: ", np.mean(avg_precision))
+    mAP, mIoU = calculate_ap(dt_rects_dict, gt_rects_dict, 0, len(gt_rects_dict), 'random')
+    print("mAP: ", mAP)
+    print("mIoU: ", mIoU)
+    
     print(tracking_metrics.get_metrics())
+    
     cap.release()
     if(gconf.video.save_video):
         out_cap.release()
