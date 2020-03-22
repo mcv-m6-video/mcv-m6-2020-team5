@@ -14,6 +14,7 @@ import numpy as np
 from os import path, mkdir
 import re
 from tqdm import tqdm 
+import skimage.measure
 
 def atoi(text):
     return int(text) if text.isdigit() else text
@@ -45,7 +46,7 @@ class squarePatchIterator(object):
     def __iter__(self):
         return self
     def __next__(self):
-        print(f"executing {self._row} {self._col}, not bigger than {self.nCols}")
+        # print(f"executing {self._row} {self._col}, not bigger than {self.nCols}")
         
         if(self._row < self.nRows):
             if(self._col < self.nCols):
@@ -55,7 +56,7 @@ class squarePatchIterator(object):
                 xlow = self._row*self.psize
                 xhgh = xlow + self.psize
                 roi = self.img[ylow:yhgh, xlow:xhgh]
-                cv2.imshow("roi", roi)
+                # cv2.imshow("roi", roi)
                 # cv2.waitKey(0)
                 self._col+=1
                 return roi 
@@ -100,11 +101,18 @@ def obtain_mean_mov_squared(img_prev, img_next,
     # movsy = np.zeros((pi_prev.get_n_patches()))
     movsx = []
     movsy = []
-    for p1, p2 in zip(pi_prev, pi_next):
+    for p1, p2 in zip(pi_prev, pi_next):  
+        e1 = skimage.measure.shannon_entropy(p1)
+        e2 = skimage.measure.shannon_entropy(p2)
+        if(e1 < 6 or e2 < 6): continue
+        # print(f"Entropy: {e1} {e2}")
         movx, movy = obtain_correlation_mov(p1, p2, canny=canny)
         movsx.append(movx)
         movsy.append(movy)
-    return np.mean(movsx), np.mean(movsy)
+        stack_imgs = np.hstack((p1, p2))
+        # cv2.imshow("res",stack_imgs)
+        # cv2.waitKey(1)
+    return pi_prev.psize-np.mean(movsx), pi_next.psize-np.mean(movsy)
         
 def obtain_mov_just_for_center(img_prev, img_next, 
                                block_match_func = obtain_correlation_mov,
@@ -113,7 +121,6 @@ def obtain_mov_just_for_center(img_prev, img_next,
     # height, width = img_prev.shape[:2]
 
     # img_prev_p = cv2.resize(img_prev_p, None, fx=nzoom, fy=nzoom) 
-    
     nheight, nwidth = img_prev.shape
     
     new_center = int(nwidth/2), int(nheight/2)
@@ -133,10 +140,11 @@ def obtain_mov_just_for_center(img_prev, img_next,
     return movx, movy
     
 def fix_video(videopath, nzoom = 0.3, window_size = 0.25,
-              canny=True, fix_strategy = obtain_mov_just_for_center):
+              canny=True, fix_strategy = obtain_mean_mov_squared,
+              max_mov=20, get_video=True):
     inversezoom = 1/nzoom 
    
-    
+    out_cap = None
     cap = cv2.VideoCapture(videopath)
     frame_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
     
@@ -145,34 +153,55 @@ def fix_video(videopath, nzoom = 0.3, window_size = 0.25,
     
     fps = cap.get(cv2.CAP_PROP_FPS)
     ret, img_prev = cap.read()
-    ret, img_next = cap.read()
     
-    img_prev_z = cv2.resize(img_prev, None, fx=nzoom, fy=nzoom) 
+    
     center = (width/2.0, height/2.0)
     y1 = 0
     x1 = int(center[0] - int(height/2))
     y2 = int(y1+height)
     x2 = int(x1+height)
 
-    img_prev_p = img_prev_z[y1:y2, x1:x2, 0]
+    img_prev_p = img_prev[y1:y2, x1:x2, 0]
+    img_prev_z = cv2.resize(img_prev_p, None, fx=nzoom, fy=nzoom) 
     
-    img_prev_z = cv2.resize(img_prev, None, fx=nzoom, fy=nzoom) 
-    img_next_p = img_prev_z[y1:y2, x1:x2, 0]
+    ret, img_next = cap.read()
+    
     pbar = tqdm(desc="Matrices calc", total=frame_count)
+    accx = 0
+    accy = 0
+    i=0
     while cap.isOpened() and ret:
+        i+=1
         pbar.update()
-        img_next_z = cv2.resize(img_next, None, fx=nzoom, fy=nzoom) 
+        img_next_p = img_next[y1:y2, x1:x2, 0]
+        img_next_z = cv2.resize(img_next_p, None, fx=nzoom, fy=nzoom) 
+        
+        # img_next_z = cv2.resize(img_next_p, None, fx=nzoom, fy=nzoom) 
         # img_next_p = cv2.resize(img_next_p, None, fx=nzoom, fy=nzoom) 
-        movx, movy = fix_strategy(img_prev_p, img_next_p, canny=canny)
-        M = np.float32([[1,0,movy*inversezoom],[0,1,movx*inversezoom]])
-        img_next = cv2.warpAffine(img_next, M, (width, height))
-        cv2.imshow("Wrapped", img_next)
-        cv2.waitKey(100)
-
-        img_prev = img_next
+        movx, movy = fix_strategy(img_prev_z, img_next_z, canny=canny)
+        accx = accx if max_mov is not None and accx >= max_mov else accx+movx
+        accy = accy if max_mov is not None and accy >= max_mov else accy+movy
+        # s = f"ACC:{accx},{accy}  MOV:{movx},{movy}"
+        # print(s)
+        # print(movx, movy)
+        M = np.float32([[1,0,accy*inversezoom],[0,1,accx*inversezoom]])
+        img_next_w = cv2.warpAffine(img_next, M, (width, height))
+        cv2.imshow("Wrapped", img_next_w)
+        cv2.waitKey(1)
+        
+        f_out = np.hstack((img_next, img_next_w))
+        if(out_cap is None  and get_video):
+            fshape = f_out.shape
+            out_cap = cv2.VideoWriter("out.avi", 
+                                    cv2.VideoWriter_fourcc(*"MJPG"), 
+                                    fps, 
+                                    (fshape[1],fshape[0]))
+        out_cap.write(f_out.astype('uint8'))
+        img_next = img_next_w
+        img_prev_z = img_next_z
         ret, img_next = cap.read()
     cap.release()
-
+    if(out_cap is not None): out_cap.release()
 def fix_video2(videopath, nzoom = 0.5, window_size = 0.25, margin = 10): 
     inversezoom = 1/nzoom 
     
@@ -204,7 +233,7 @@ def fix_video2(videopath, nzoom = 0.5, window_size = 0.25, margin = 10):
     sy2 = int(new_center[0]+int(nheight*window_size)) #Tocar això fa moure la finestra en horitzontal
     
     matrices = []
-    pbar = tqdm(desc="Matrices calc", total=frame_count)
+    pbar = tqdm(desc="Frame", total=frame_count)
     ret, img_next = cap.read()
     while cap.isOpened() and ret:
         
@@ -254,5 +283,5 @@ def fix_video2(videopath, nzoom = 0.5, window_size = 0.25, margin = 10):
         i+=1        
 
 if __name__ == "__main__":
-    fpath = "/home/dazmer/Videos/non_stabilized3.mp4"
+    fpath = "/home/dazmer/Videos/non_stabilized4.mp4"
     fix_video(fpath)
