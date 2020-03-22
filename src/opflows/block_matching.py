@@ -15,7 +15,7 @@ from os import path, mkdir
 import re
 from tqdm import tqdm 
 import skimage.measure
-
+from visualization import colorflow_white
 def atoi(text):
     return int(text) if text.isdigit() else text
 
@@ -28,15 +28,20 @@ def natural_keys(text):
     return [ atoi(c) for c in re.split('(\d+)', text) ]
 
 class squarePatchIterator(object):
-    def __init__(self, img, nSplits):
+    def __init__(self, img, nSplits, w_padding=0, simulated_w_padding=0):
         self.img = img
         self.nSplits = int(nSplits)
         self.nRows = int(nSplits)
         self.nCols = int(nSplits)
+        self.w_padding = w_padding
+        self.s_w_padding = simulated_w_padding
 
         # Dimensions of the image
         self.size = img.shape[1]
-        self.psize = int(self.size/self.nSplits)
+        w_padding = int(self.size*w_padding)+1
+        s_w_padding = int(self.size*simulated_w_padding)+1
+        self.start_xy = w_padding + s_w_padding
+        self.psize = int((self.size-w_padding*2)/self.nSplits)
         # self.sizeY = img.shape[0]
 
         self._row = 0
@@ -50,11 +55,11 @@ class squarePatchIterator(object):
         
         if(self._row < self.nRows):
             if(self._col < self.nCols):
-                ylow = self._col*self.psize
-                yhgh = ylow + self.psize
+                ylow = self.start_xy+self._col*self.psize
+                yhgh = self.start_xy+ylow + self.psize
                 
-                xlow = self._row*self.psize
-                xhgh = xlow + self.psize
+                xlow = self.start_xy+self._row*self.psize
+                xhgh = self.start_xy+xlow + self.psize
                 roi = self.img[ylow:yhgh, xlow:xhgh]
                 # cv2.imshow("roi", roi)
                 # cv2.waitKey(0)
@@ -113,7 +118,50 @@ def obtain_mean_mov_squared(img_prev, img_next,
         # cv2.imshow("res",stack_imgs)
         # cv2.waitKey(1)
     return pi_prev.psize-np.mean(movsx), pi_next.psize-np.mean(movsy)
-        
+
+def obtain_dense_mov_squared(img_prev, img_next,
+                             padding_area_search = 0.2,
+                             black_match_func = obtain_correlation_mov,
+                             window_size=0.25, canny=True):
+    # if(area_search < window_size):
+    #     raise(ValueError("Area of search must be bigger than window size"))
+    movsx = np.zeros((img_prev.shape[:2]))
+    movsy = np.zeros((img_prev.shape[:2]))
+    
+    splits = int(1/window_size)
+    
+    pi_prev = squarePatchIterator(img_prev, splits, w_padding = padding_area_search)
+    pi_next = squarePatchIterator(img_next, splits, simulated_w_padding = padding_area_search)
+    pi_movsx = squarePatchIterator(movsx, splits, simulated_w_padding = padding_area_search)
+    pi_movsy = squarePatchIterator(movsy, splits, simulated_w_padding = padding_area_search)
+    
+    # movsx = np.zeros((pi_prev.get_n_patches()))
+    # movsy = np.zeros((pi_prev.get_n_patches()))
+    # movsx = np.zeros
+    # start_xy = pi_prev.start_xy
+    # movsx = []
+    # movsy = []
+    # movsx_l = []
+    # movsy_l = []
+    for p1, p2, mx, my in zip(pi_prev, pi_next, pi_movsx, pi_movsy):  
+        e1 = skimage.measure.shannon_entropy(p1)
+        e2 = skimage.measure.shannon_entropy(p2)
+        if(e1 < 6 or e2 < 6): continue
+        # print(f"Entropy: {e1} {e2}")
+        movx, movy = obtain_correlation_mov(p1, p2, canny=canny)
+        mx[:] = movx
+        my[:] = movy
+        # movsx_l.append(movx)
+        # movsy_l.append(movy)
+        # movsx.append(movx)
+        # movsy.append(movy)
+        # stack_imgs = np.hstack((p1, p2))
+        # cv2.imshow("res",stack_imgs)
+        # cv2.waitKey(1)
+    # m_movx, m_movy = pi_prev.psize-np.mean(movsx), pi_next.psize-np.mean(movsy)
+    return movsx, movsy
+
+    
 def obtain_mov_just_for_center(img_prev, img_next, 
                                block_match_func = obtain_correlation_mov,
                                window_size=0.25, canny=True):
@@ -201,7 +249,84 @@ def fix_video(videopath, nzoom = 0.3, window_size = 0.25,
         img_prev_z = img_next_z
         ret, img_next = cap.read()
     cap.release()
-    if(out_cap is not None): out_cap.release()
+    if(out_cap is not None): 
+        out_cap.release()
+    
+def view_dense(videopath, nzoom = 0.3, window_size = 0.25,
+              canny=True, dense_strategy = obtain_dense_mov_squared,
+              max_mov=20, get_video=True):
+    inversezoom = 1/nzoom 
+   
+    out_cap = None
+    cap = cv2.VideoCapture(videopath)
+    frame_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+    
+    width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))   # float
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))  # float
+    
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    ret, img_prev = cap.read()
+    
+    
+    center = (width/2.0, height/2.0)
+    y1 = 0
+    x1 = int(center[0] - int(height/2))
+    y2 = int(y1+height)
+    x2 = int(x1+height)
+
+    img_prev_p = img_prev[y1:y2, x1:x2, 0]
+    img_prev_z = cv2.resize(img_prev_p, None, fx=nzoom, fy=nzoom) 
+    
+    ret, img_next = cap.read()
+    
+    pbar = tqdm(desc="Matrices calc", total=frame_count)
+    accx = 0
+    accy = 0
+    i=0
+    zx1, zx2, zy1, zy2 = map(lambda x: int(x*nzoom), [x1, x2, y1, y2])
+    while cap.isOpened() and ret:
+        i+=1
+        pbar.update()
+        
+        
+        img_next_z = cv2.resize(img_next, None, fx=nzoom, fy=nzoom) 
+        z_placeholder = np.zeros_like(img_next_z)
+        img_next_p = img_next_z[zy1:zy2, zx1:zx2, 0]
+        
+        
+        # img_next_z = cv2.resize(img_next_p, None, fx=nzoom, fy=nzoom) 
+        # img_next_p = cv2.resize(img_next_p, None, fx=nzoom, fy=nzoom) 
+        movx, movy = dense_strategy(img_next_p, img_next_p, canny=canny)
+        # accx = accx if max_mov is not None and accx >= max_mov else accx+movx
+        # accy = accy if max_mov is not None and accy >= max_mov else accy+movy
+        # s = f"ACC:{accx},{accy}  MOV:{movx},{movy}"
+        # print(s)
+        # print(movx, movy)
+        
+        # M = np.float32([[1,0,accy*inversezoom],[0,1,accx*inversezoom]])
+        
+        # img_next_w = cv2.warpAffine(img_next, M, (width, height))
+        rgb = colorflow_white(np.dstack([movx, movy]))
+        cv2.waitKey(1)
+        z_placeholder[zy1:zy2, zx1:zx2] = rgb
+        f_out = np.hstack((img_next_z, z_placeholder))
+        cv2.imshow("out", f_out)
+        if(out_cap is None  and get_video):
+            fshape = f_out.shape
+            out_cap = cv2.VideoWriter("out.avi", 
+                                    cv2.VideoWriter_fourcc(*"MJPG"), 
+                                    fps, 
+                                    (fshape[1],fshape[0]))
+        out_cap.write(f_out.astype('uint8'))
+        # img_next = img_next_w
+        img_prev_p = img_next_p
+        ret, img_next = cap.read()
+    cap.release()
+    if(out_cap is not None): 
+        out_cap.release()
+    
+        
+    
 def fix_video2(videopath, nzoom = 0.5, window_size = 0.25, margin = 10): 
     inversezoom = 1/nzoom 
     
@@ -284,4 +409,4 @@ def fix_video2(videopath, nzoom = 0.5, window_size = 0.25, margin = 10):
 
 if __name__ == "__main__":
     fpath = "/home/dazmer/Videos/non_stabilized4.mp4"
-    fix_video(fpath)
+    view_dense(fpath)
