@@ -15,7 +15,7 @@ from os import path, mkdir
 import re
 from tqdm import tqdm 
 import skimage.measure
-from visualization import colorflow_white
+from visualization import colorflow_white, colorflow_black
 def atoi(text):
     return int(text) if text.isdigit() else text
 
@@ -28,39 +28,61 @@ def natural_keys(text):
     return [ atoi(c) for c in re.split('(\d+)', text) ]
 
 class squarePatchIterator(object):
-    def __init__(self, img, nSplits, w_padding=0, simulated_w_padding=0):
+    def __init__(self, img, nSplits, w_padding=0, include_padding=False):
         self.img = img
         self.nSplits = int(nSplits)
         self.nRows = int(nSplits)
         self.nCols = int(nSplits)
         self.w_padding = w_padding
-        self.s_w_padding = simulated_w_padding
-
+        # self.s_w_padding = simulated_w_padding
+        if(w_padding>=0.5):
+            raise(ValueError("Padding cannot be higher than 0.5: got ",w_padding))
         # Dimensions of the image
-        self.size = img.shape[1]
-        w_padding = int(self.size*w_padding)+1
-        s_w_padding = int(self.size*simulated_w_padding)+1
-        self.start_xy = w_padding + s_w_padding
-        self.psize = int((self.size-w_padding*2)/self.nSplits)
-        # self.sizeY = img.shape[0]
-
+        self.size = img.shape[0]
+        self.w_padding = int(self.size*w_padding)
+        self.start_xy = self.w_padding
+        self.psize = int((self.size-self.start_xy*2)/self.nSplits)
+        
         self._row = 0
         self._col = 0
+        
+        self._next_x_start = self.start_xy
+        self._next_y_start = self.start_xy
+        
+        self.include_padding = include_padding
+        
+        self.area_sz = self.psize+self.w_padding*2
     def get_n_patches(self):
         return self.nRows*self.nCols
     def __iter__(self):
         return self
     def __next__(self):
-        # print(f"executing {self._row} {self._col}, not bigger than {self.nCols}")
         
-        if(self._row < self.nRows):
-            if(self._col < self.nCols):
-                ylow = self.start_xy+self._col*self.psize
-                yhgh = self.start_xy+ylow + self.psize
-                
-                xlow = self.start_xy+self._row*self.psize
-                xhgh = self.start_xy+xlow + self.psize
+        # print(f"executing {self._row} {self._col}, not bigger than {self.nCols}")
+        yp = self._col*self.psize
+        xp = self._row*self.psize
+        
+        ylow = self.start_xy+yp
+        xlow = self.start_xy+xp
+        
+        yhgh = ylow + self.psize
+        xhgh = xlow + self.psize
+        
+        m_ylow = ylow-self.w_padding
+        m_xlow = xlow-self.w_padding
+        m_yhgh = yhgh+self.w_padding
+        m_xhgh = xhgh+self.w_padding
+        
+        if(self.include_padding):
+            ylow = m_ylow
+            yhgh = m_yhgh
+            xlow = m_xlow
+            xhgh = m_xhgh
+        # print(self._row, self._col,yp,self.size,self.start_xy)
+        if(m_xhgh <= self.img.shape[1]):
+            if(m_yhgh <= self.img.shape[0]):
                 roi = self.img[ylow:yhgh, xlow:xhgh]
+                # print(roi.shape)
                 # cv2.imshow("roi", roi)
                 # cv2.waitKey(0)
                 self._col+=1
@@ -70,6 +92,7 @@ class squarePatchIterator(object):
                 self._row +=1
         else:
             raise(StopIteration())
+        
         return self.__next__()
 
 
@@ -87,14 +110,15 @@ def obtain_correlation_mov(patch1, patch2, canny=True):
     if(canny):
         patch1 = cv2.Canny(patch1, 10, 70)
         patch2 = cv2.Canny(patch2, 10, 70)
-    red_corr = conv2(rotate180(patch1).astype(np.float), 
-                               patch2.astype(np.float))
-    maxx, maxy = (np.where(red_corr==red_corr.max())[0][0], 
-              np.where(red_corr==red_corr.max())[1][0])
-    # diffx = (sx2-sx1) - maxx
-    # diffy = (sx2-sx1) - maxy
-    return maxx, maxy
-
+    if(np.count_nonzero(patch1) and np.count_nonzero(patch2)):
+        red_corr = conv2(rotate180(patch1).astype(np.float), 
+                                   patch2.astype(np.float))
+        maxx, maxy = (np.where(red_corr==red_corr.max())[0][0], 
+                  np.where(red_corr==red_corr.max())[1][0])
+        # diffx = (sx2-sx1) - maxx
+        # diffy = (sx2-sx1) - maxy
+        return maxx, maxy
+    return patch1.shape[0],patch1.shape[1]
 def obtain_mean_mov_squared(img_prev, img_next, 
                             block_match_func = obtain_correlation_mov,
                             window_size=0.25, canny=True):
@@ -107,9 +131,9 @@ def obtain_mean_mov_squared(img_prev, img_next,
     movsx = []
     movsy = []
     for p1, p2 in zip(pi_prev, pi_next):  
-        e1 = skimage.measure.shannon_entropy(p1)
-        e2 = skimage.measure.shannon_entropy(p2)
-        if(e1 < 6 or e2 < 6): continue
+        # e1 = skimage.measure.shannon_entropy(p1)
+        # e2 = skimage.measure.shannon_entropy(p2)
+        # if(e1 < 6 or e2 < 6): continue
         # print(f"Entropy: {e1} {e2}")
         movx, movy = obtain_correlation_mov(p1, p2, canny=canny)
         movsx.append(movx)
@@ -119,10 +143,10 @@ def obtain_mean_mov_squared(img_prev, img_next,
         # cv2.waitKey(1)
     return pi_prev.psize-np.mean(movsx), pi_next.psize-np.mean(movsy)
 
-def obtain_dense_mov_squared(img_prev, img_next,
-                             padding_area_search = 0.2,
-                             black_match_func = obtain_correlation_mov,
-                             window_size=0.25, canny=True):
+def obtain_dense_mov(img_prev, img_next,
+                    area_search = 0.0,
+                    black_match_func = obtain_correlation_mov,
+                    window_size=0.05, canny=True):
     # if(area_search < window_size):
     #     raise(ValueError("Area of search must be bigger than window size"))
     movsx = np.zeros((img_prev.shape[:2]))
@@ -130,10 +154,10 @@ def obtain_dense_mov_squared(img_prev, img_next,
     
     splits = int(1/window_size)
     
-    pi_prev = squarePatchIterator(img_prev, splits, w_padding = padding_area_search)
-    pi_next = squarePatchIterator(img_next, splits, simulated_w_padding = padding_area_search)
-    pi_movsx = squarePatchIterator(movsx, splits, simulated_w_padding = padding_area_search)
-    pi_movsy = squarePatchIterator(movsy, splits, simulated_w_padding = padding_area_search)
+    pi_prev = squarePatchIterator(img_prev, splits,area_search, True)
+    pi_next = squarePatchIterator(img_next, splits,area_search,False)
+    pi_movsx = squarePatchIterator(movsx, splits,area_search,False)
+    pi_movsy = squarePatchIterator(movsy, splits,area_search,False)
     
     # movsx = np.zeros((pi_prev.get_n_patches()))
     # movsy = np.zeros((pi_prev.get_n_patches()))
@@ -144,13 +168,12 @@ def obtain_dense_mov_squared(img_prev, img_next,
     # movsx_l = []
     # movsy_l = []
     for p1, p2, mx, my in zip(pi_prev, pi_next, pi_movsx, pi_movsy):  
-        e1 = skimage.measure.shannon_entropy(p1)
-        e2 = skimage.measure.shannon_entropy(p2)
-        if(e1 < 6 or e2 < 6): continue
-        # print(f"Entropy: {e1} {e2}")
         movx, movy = obtain_correlation_mov(p1, p2, canny=canny)
-        mx[:] = movx
-        my[:] = movy
+        fx = pi_prev.area_sz-movx
+        fy = pi_prev.area_sz-movy
+        mx[:] = fx
+        my[:] = fy
+        # print(f"MOV X: {fx} MOV Y: {fy}")
         # movsx_l.append(movx)
         # movsy_l.append(movy)
         # movsx.append(movx)
@@ -253,7 +276,7 @@ def fix_video(videopath, nzoom = 0.3, window_size = 0.25,
         out_cap.release()
     
 def view_dense(videopath, nzoom = 0.3, window_size = 0.25,
-              canny=True, dense_strategy = obtain_dense_mov_squared,
+              canny=True, dense_strategy = obtain_dense_mov,
               max_mov=20, get_video=True):
     inversezoom = 1/nzoom 
    
@@ -269,12 +292,12 @@ def view_dense(videopath, nzoom = 0.3, window_size = 0.25,
     
     
     center = (width/2.0, height/2.0)
-    y1 = 0
-    x1 = int(center[0] - int(height/2))
-    y2 = int(y1+height)
-    x2 = int(x1+height)
+    # y1 = 0
+    # x1 = int(center[0] - int(height/2))
+    # y2 = int(y1+height)
+    # x2 = int(x1+height)
 
-    img_prev_p = img_prev[y1:y2, x1:x2, 0]
+    img_prev_p = img_prev[:,:, 0]
     img_prev_z = cv2.resize(img_prev_p, None, fx=nzoom, fy=nzoom) 
     
     ret, img_next = cap.read()
@@ -283,7 +306,7 @@ def view_dense(videopath, nzoom = 0.3, window_size = 0.25,
     accx = 0
     accy = 0
     i=0
-    zx1, zx2, zy1, zy2 = map(lambda x: int(x*nzoom), [x1, x2, y1, y2])
+    # zx1, zx2, zy1, zy2 = map(lambda x: int(x*nzoom), [x1, x2, y1, y2])
     while cap.isOpened() and ret:
         i+=1
         pbar.update()
@@ -291,12 +314,13 @@ def view_dense(videopath, nzoom = 0.3, window_size = 0.25,
         
         img_next_z = cv2.resize(img_next, None, fx=nzoom, fy=nzoom) 
         z_placeholder = np.zeros_like(img_next_z)
-        img_next_p = img_next_z[zy1:zy2, zx1:zx2, 0]
+        img_next_p = img_next_z[:,:, 0]
         
         
         # img_next_z = cv2.resize(img_next_p, None, fx=nzoom, fy=nzoom) 
         # img_next_p = cv2.resize(img_next_p, None, fx=nzoom, fy=nzoom) 
         movx, movy = dense_strategy(img_next_p, img_next_p, canny=canny)
+        movx, movy = movx*inversezoom, movy*inversezoom
         # accx = accx if max_mov is not None and accx >= max_mov else accx+movx
         # accy = accy if max_mov is not None and accy >= max_mov else accy+movy
         # s = f"ACC:{accx},{accy}  MOV:{movx},{movy}"
@@ -308,7 +332,7 @@ def view_dense(videopath, nzoom = 0.3, window_size = 0.25,
         # img_next_w = cv2.warpAffine(img_next, M, (width, height))
         rgb = colorflow_white(np.dstack([movx, movy]))
         cv2.waitKey(1)
-        z_placeholder[zy1:zy2, zx1:zx2] = rgb
+        z_placeholder[:,:] = rgb
         f_out = np.hstack((img_next_z, z_placeholder))
         cv2.imshow("out", f_out)
         if(out_cap is None  and get_video):
@@ -408,5 +432,6 @@ def fix_video2(videopath, nzoom = 0.5, window_size = 0.25, margin = 10):
         i+=1        
 
 if __name__ == "__main__":
-    fpath = "/home/dazmer/Videos/non_stabilized4.mp4"
+    fpath = "/home/dazmer/Videos/non_stabilized3.mp4"
+    # fix_video(fpath)
     view_dense(fpath)
