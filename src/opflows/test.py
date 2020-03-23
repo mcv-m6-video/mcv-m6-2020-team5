@@ -8,6 +8,7 @@ from coarse2fine_flow import coarse2fine_flow
 # from interpolation.tvl1 import tvl1_simple, opticalFlowTVL1Pyr
 # from interpolation.lucas_kanade import opticalFlowLK, opticalFlowLKPyr
 import flowmetrics
+import block_matching
 
 def main():
     
@@ -57,7 +58,7 @@ def main():
         else:
             flow = opticalFlowLKPyr(im1,im2)
     elif sel_method == 6:
-        flow = obtain_dense_mov(im1,im2)
+        flow = block_matching.obtain_dense_mov(im1,im2)
     else:
         print("El método seleccionado no es válido.")            
         
