@@ -5,7 +5,7 @@ Created on Sun Jun 17 17:45:56 2018
 @author: hamdd
 """
 
-import paramiko
+# import paramiko
 import json
 from os import path, mkdir, remove
 #from pprint import pprint

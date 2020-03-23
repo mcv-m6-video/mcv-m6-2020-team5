@@ -4,47 +4,31 @@ from decode import decode_optical_flow
 from visualization import colorflow_white,arrow_flow
 import matplotlib.pyplot as plt
 from coarse2fine_flow import coarse2fine_flow
-from interpolation.horn_schunck import opticalFlowHS, opticalFlowHSPyr
-from interpolation.tvl1 import tvl1_simple, opticalFlowTVL1Pyr
-from interpolation.lucas_kanade import opticalFlowLK, opticalFlowLKPyr
-
-def flowmetrics(pred_flow, gt_flow, valid_flow, thres = 3):
-    
-    #Convert flows to vectors and: (pred - gt)^2
-    error = (pred_flow[...,:2] - gt_flow[...,:2])**2
-    
-    error_n = error[valid_flow]
-    
-    #sqrt((pred-gt)^2)
-    mse = np.sqrt(error_n[:,0]+error_n[:,1])
-    
-    #1/N*sum(sqrt((pred-gt)^2))
-    msen = mse.mean()
-    
-    pepn = 100*(mse > thres).sum()/mse.size
-    
-    return msen,pepn
+# from interpolation.horn_schunck import opticalFlowHS, opticalFlowHSPyr
+# from interpolation.tvl1 import tvl1_simple, opticalFlowTVL1Pyr
+# from interpolation.lucas_kanade import opticalFlowLK, opticalFlowLKPyr
+import flowmetrics
 
 def main():
     
     
     method = ['block_matching', 'coarse2fine', 'DenseCV', 'HS', 'TVL', 'LK']
     
-    sel_method = 1
+    sel_method = 6
     pyr = True
     
-    gt_paths = ["/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/noc_000045_10.png",
-                "/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/noc_000157_10.png"]
+    gt_paths = ["../datasets/of_pred/noc_000045_10.png",
+                "../datasets/of_pred/noc_000157_10.png"]
     
     select_image = 0 #0: image 1, 2: image 2
     
     
     if select_image == 0:
-        im1 = cv2.imread("/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/000045_10.png", cv2.IMREAD_UNCHANGED )
-        im2 = cv2.imread("/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/000045_11.png", cv2.IMREAD_UNCHANGED )
+        im1 = cv2.imread("../datasets/of_pred/000045_10.png", cv2.IMREAD_UNCHANGED )
+        im2 = cv2.imread("../datasets/of_pred/000045_11.png", cv2.IMREAD_UNCHANGED )
     elif select_image == 1:
-        im1 = cv2.imread("/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/000157_10.png", cv2.IMREAD_UNCHANGED )
-        im2 = cv2.imread("/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/000157_11.png", cv2.IMREAD_UNCHANGED )
+        im1 = cv2.imread("../datasets/of_pred/000157_10.png", cv2.IMREAD_UNCHANGED )
+        im2 = cv2.imread("../datasets/of_pred/000157_11.png", cv2.IMREAD_UNCHANGED )
     
     gt = cv2.imread(gt_paths[select_image], cv2.IMREAD_UNCHANGED)
     
@@ -72,6 +56,8 @@ def main():
             flow = opticalFlowLK(im1,im2)
         else:
             flow = opticalFlowLKPyr(im1,im2)
+    elif sel_method == 6:
+        flow = obtain_dense_mov(im1,im2)
     else:
         print("El método seleccionado no es válido.")            
         
@@ -84,12 +70,13 @@ def main():
     arrow_flow(flow,im1)
     
     ##metrics
-    msen, pepn = flowmetrics(flow, flow_gt, val_gt_flow)
+    msen, pepn = flowmetrics.flowmetrics(flow, flow_gt, val_gt_flow)
     
     print('MSEN')
     print(msen)
     print('PEPN')
     print(pepn)
     
-
+if __name__ == "__main__":
+    main()
 
