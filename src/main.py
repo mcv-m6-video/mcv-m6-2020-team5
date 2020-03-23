@@ -113,6 +113,10 @@ def main(new_config):
                 #predict over the frame
                 dt_rects = detect_func(frame)
                 
+                # flow_rgb = opt_view.colorflow_white(flow)
+                # cv2.imshow("orgflow",flow_rgb)
+                # cv2.waitKey()
+                
                 #filter results
                 dt_rects, _ = bbfilters(dt_rects, frame, **gconf.bbox_filter)
                 orig_dt_rects = dt_rects.copy()
@@ -198,9 +202,9 @@ def main(new_config):
                     if(gconf.display.frames):
                         cv2.imshow(w_name, f_out.astype('uint8'))
                         
-                if(gconf.tracker.ttype == "optical_flow_track"):
-                    flow_rgb = opt_view.colorflow_white(flow)
-                    cv2.imshow("flow",flow_rgb)
+                # if(gconf.tracker.ttype == "optical_flow_track"):
+                #     flow_rgb = opt_view.colorflow_white(flow)
+                #     cv2.imshow("flow",flow_rgb)
                 # Press Q on keyboard to  exit
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
