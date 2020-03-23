@@ -95,10 +95,6 @@ class squarePatchIterator(object):
         
         return self.__next__()
 
-
-
-cv2.waitKey()
-
 def rotate180(img):
     (h, w) = img.shape[:2]
     center = (w / 2, h / 2)
@@ -119,6 +115,7 @@ def obtain_correlation_mov(patch1, patch2, canny=True):
         # diffy = (sx2-sx1) - maxy
         return maxx, maxy
     return patch1.shape[0],patch1.shape[1]
+
 def obtain_mean_mov_squared(img_prev, img_next, 
                             block_match_func = obtain_correlation_mov,
                             window_size=0.25, canny=True):
@@ -182,7 +179,9 @@ def obtain_dense_mov(img_prev, img_next,
         # cv2.imshow("res",stack_imgs)
         # cv2.waitKey(1)
     # m_movx, m_movy = pi_prev.psize-np.mean(movsx), pi_next.psize-np.mean(movsy)
-    return movsx, movsy
+    
+    flow = np.stack((movsx, movsy), axis=2)
+    return flow
 
     
 def obtain_mov_just_for_center(img_prev, img_next, 

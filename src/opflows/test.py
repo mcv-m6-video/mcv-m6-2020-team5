@@ -8,6 +8,7 @@ from interpolation.horn_schunck import opticalFlowHS, opticalFlowHSPyr
 from interpolation.tvl1 import tvl1_simple, opticalFlowTVL1Pyr
 from interpolation.lucas_kanade import opticalFlowLK, opticalFlowLKPyr
 import flowmetrics
+import block_matching
 
 def main():
     
