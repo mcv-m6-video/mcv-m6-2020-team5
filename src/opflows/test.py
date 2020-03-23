@@ -66,9 +66,11 @@ def main():
     elif sel_method == 0:
         flow = bm1.obtain_dense_mov(im1,im2, 
                                     window_size=0.02, area_search=0)
-    elif sel_method == 7:
+    elif sel_method == 6:
         block_match2 = bm2.EBMA_searcher(15,15)
+    
         im_warped, flow = block_match2.run(im1,im2)
+        flow = block_match2.get_original_size(flow,im1.shape[:2])
     else:
         print("El método seleccionado no es válido.")            
         

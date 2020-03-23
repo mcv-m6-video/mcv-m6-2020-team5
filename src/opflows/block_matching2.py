@@ -11,7 +11,6 @@ from tqdm import tqdm
 
 
 
-
 class EBMA_searcher():
     """
     Estimates the motion between to frame images
@@ -33,9 +32,20 @@ class EBMA_searcher():
         self.p = p
         self.acc = acc
         
-    def get_original_size(flow,frame_size):
-        pass
+    def get_original_size(self,flow,frame_size):
+        w = frame_size[0]
+        h = frame_size[1]
+        
+        h_f = flow.shape[0]
+        w_f = flow.shape[1]
+        
+        new_flow = np.zeros((w,h,2))
+        for i in range(h):
+            for j in range(w):
+                new_flow[j,i,:] = flow[min(int(j / self.N),h_f-1), min(int(i / self.N),w_f-1),:]
+        return new_flow
 
+    @jit
     def run(self, target_frame, anchor_frame):
         """
         Run!
