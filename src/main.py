@@ -98,7 +98,8 @@ def main(new_config):
         if(i > 0):
             old_frame = non_modified_frame
         ret, frame = cap.read()
-        non_modified_frame = frame.copy()
+        if(ret):
+            non_modified_frame = frame.copy()
         if(i == 0):
             old_frame = non_modified_frame
         
