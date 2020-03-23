@@ -28,6 +28,7 @@ from metrics.map_all_frames import calculate_ap
 from tracking.trackers import obtain_tracker
 from tqdm import tqdm 
 from collections import OrderedDict
+import opflows.visualization as opt_view
 
 import pickle
 
@@ -88,15 +89,27 @@ def main(new_config):
     else:
         INIT_DISPLAY = gconf.detector.backgrounds.ours.init_at
     pbar = tqdm(total=2140)
+    
+    
     while(cap.isOpened() and (not gconf.video.save_video and 
                               (gconf.STOP_AT == -1 or i <= gconf.STOP_AT) or
                               gconf.video.save_video and i <= VIDEO_END)):
         # Capture frame-by-frame
+        if(i > 0):
+            old_frame = non_modified_frame
         ret, frame = cap.read()
+        non_modified_frame = frame.copy()
+        if(i == 0):
+            old_frame = non_modified_frame
+        
         pbar.update()
         if ret == True:
             if( i > gconf.START_PROCESSING_AT ):
-
+                
+                if(gconf.tracker.ttype == "optical_flow_track"):
+                    gray_img1 = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    old_frame = cv2.cvtColor(old_frame, cv2.COLOR_BGR2GRAY)
+                    flow = cv2.calcOpticalFlowFarneback(old_frame,gray_img1, None, 0.5, 3, 15, 3, 5, 1.2, 0)
                 #predict over the frame
                 dt_rects = detect_func(frame)
                 
@@ -105,7 +118,10 @@ def main(new_config):
                 orig_dt_rects = dt_rects.copy()
                 
                 #Retrack over the frame
-                dt_rects = tracker.update(dt_rects)
+                if(gconf.tracker.ttype == "optical_flow_track"):
+                    dt_rects = tracker.update(dt_rects,flow)
+                else:
+                    dt_rects = tracker.update(dt_rects)
                                 
                 #Obtain GT
                 gt_rects = gt_frames[str(i)]
@@ -126,7 +142,7 @@ def main(new_config):
                     # avg_precision.append(avg_precision_frame)
                     # iou_history.append(iou_frame)
                     nval_img += 1
-                    
+                
                 # Tracking for this frame
                 dt_track = OrderedDict()
                 for dt_id, dtrect in dt_rects.items():
@@ -181,7 +197,10 @@ def main(new_config):
                             out_cap.write(f_out.astype('uint8'))
                     if(gconf.display.frames):
                         cv2.imshow(w_name, f_out.astype('uint8'))
-                
+                        
+                if(gconf.tracker.ttype == "optical_flow_track"):
+                    flow_rgb = opt_view.colorflow_white(flow)
+                    cv2.imshow("flow",flow_rgb)
                 # Press Q on keyboard to  exit
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
