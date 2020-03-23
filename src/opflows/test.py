@@ -6,16 +6,31 @@ import matplotlib.pyplot as plt
 from coarse2fine_flow import coarse2fine_flow
 from interpolation.horn_schunck import opticalFlowHS, opticalFlowHSPyr
 from interpolation.tvl1 import tvl1_simple, opticalFlowTVL1Pyr
-from flowmetrics import flowmetrics
+from interpolation.lucas_kanade import opticalFlowLK, opticalFlowLKPyr
 
-
+def flowmetrics(pred_flow, gt_flow, valid_flow, thres = 3):
+    
+    #Convert flows to vectors and: (pred - gt)^2
+    error = (pred_flow[...,:2] - gt_flow[...,:2])**2
+    
+    error_n = error[valid_flow]
+    
+    #sqrt((pred-gt)^2)
+    mse = np.sqrt(error_n[:,0]+error_n[:,1])
+    
+    #1/N*sum(sqrt((pred-gt)^2))
+    msen = mse.mean()
+    
+    pepn = 100*(mse > thres).sum()/mse.size
+    
+    return msen,pepn
 
 def main():
     
     
-    method = ['block_matching', 'coarse2fine', 'DenseCV', 'HS', 'TVL']
+    method = ['block_matching', 'coarse2fine', 'DenseCV', 'HS', 'TVL', 'LK']
     
-    sel_method = 2
+    sel_method = 1
     pyr = True
     
     gt_paths = ["/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/noc_000045_10.png",
@@ -52,6 +67,11 @@ def main():
             flow = tvl1_simple(im1,im2)
         else:
             flow = opticalFlowTVL1Pyr(im1,im2)
+    elif sel_method == 5:
+        if pyr == True:
+            flow = opticalFlowLK(im1,im2)
+        else:
+            flow = opticalFlowLKPyr(im1,im2)
     else:
         print("El método seleccionado no es válido.")            
         
