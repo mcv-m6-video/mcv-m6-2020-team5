@@ -8,7 +8,8 @@ from interpolation.horn_schunck import opticalFlowHS, opticalFlowHSPyr
 from interpolation.tvl1 import tvl1_simple, opticalFlowTVL1Pyr
 from interpolation.lucas_kanade import opticalFlowLK, opticalFlowLKPyr
 import flowmetrics
-import block_matching
+import block_matching as bm1
+import block_matching2 as bm2 
 
 def main():
     
@@ -61,6 +62,9 @@ def main():
             flow = opticalFlowLKPyr(im1,im2)
     elif sel_method == 0:
         flow = obtain_dense_mov(im1,im2)
+    elif sel_method == 7:
+        block_match2 = bm2.EBMA_searcher(15,15)
+        im_warped, flow = block_match2.run(im1,im2)
     else:
         print("El método seleccionado no es válido.")            
         

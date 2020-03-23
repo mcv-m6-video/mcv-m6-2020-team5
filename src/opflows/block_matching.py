@@ -177,7 +177,7 @@ def obtain_dense_mov(img_prev, img_next,
         # movsy.append(movy)
         # stack_imgs = np.hstack((p1, p2))
         # cv2.imshow("res",stack_imgs)
-        # cv2.waitKey(1)
+        # cv2.waitKey()
     # m_movx, m_movy = pi_prev.psize-np.mean(movsx), pi_next.psize-np.mean(movsy)
     
     flow = np.stack((movsx, movsy), axis=2)
@@ -347,8 +347,6 @@ def view_dense(videopath, nzoom = 0.3, window_size = 0.25,
     cap.release()
     if(out_cap is not None): 
         out_cap.release()
-    
-        
     
 def fix_video2(videopath, nzoom = 0.5, window_size = 0.25, margin = 10): 
     inversezoom = 1/nzoom 
