@@ -65,7 +65,8 @@ def main():
             flow = opticalFlowLKPyr(im1,im2)
     elif sel_method == 0:
         flow = bm1.obtain_dense_mov(im1,im2, 
-                                    window_size=0.02, area_search=0)
+                                    window_size=0.025, 
+                                    area_search=0.025)
     elif sel_method == 7:
         block_match2 = bm2.EBMA_searcher(15,15)
         im_warped, flow = block_match2.run(im1,im2)

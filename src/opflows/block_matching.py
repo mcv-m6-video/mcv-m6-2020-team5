@@ -106,15 +106,20 @@ def obtain_correlation_mov(patch1, patch2, canny=True):
     if(canny):
         patch1 = cv2.Canny(patch1, 10, 70)
         patch2 = cv2.Canny(patch2, 10, 70)
+    red_corr = conv2(rotate180(patch1).astype(np.float), 
+                               patch2.astype(np.float))
     if(np.count_nonzero(patch1) and np.count_nonzero(patch2)):
-        red_corr = conv2(rotate180(patch1).astype(np.float), 
-                                   patch2.astype(np.float))
-        maxx, maxy = (np.where(red_corr==red_corr.max())[0][0], 
-                  np.where(red_corr==red_corr.max())[1][0])
+        max_val = red_corr.max()
+        r255 = ((red_corr/max_val)*255).astype(np.uint8)
+        cv2.imshow("r255", r255)
+        cv2.waitKey(1)
+        maxx, maxy = np.where(red_corr==max_val)
+        maxx, maxy = maxx[0], maxy[0]
         # diffx = (sx2-sx1) - maxx
         # diffy = (sx2-sx1) - maxy
         return maxx, maxy
-    return patch1.shape[0],patch1.shape[1]
+    else:
+        return patch1.shape[0],patch1.shape[1]
 
 def obtain_mean_mov_squared(img_prev, img_next, 
                             block_match_func = obtain_correlation_mov,
@@ -151,8 +156,8 @@ def obtain_dense_mov(img_prev, img_next,
     
     splits = int(1/window_size)
     
-    pi_prev = squarePatchIterator(img_prev, splits,area_search, True)
-    pi_next = squarePatchIterator(img_next, splits,area_search,False)
+    pi_prev = squarePatchIterator(img_prev, splits,area_search, False)
+    pi_next = squarePatchIterator(img_next, splits,area_search,True)
     pi_movsx = squarePatchIterator(movsx, splits,area_search,False)
     pi_movsy = squarePatchIterator(movsy, splits,area_search,False)
     
@@ -166,6 +171,7 @@ def obtain_dense_mov(img_prev, img_next,
     # movsy_l = []
     for p1, p2, mx, my in zip(pi_prev, pi_next, pi_movsx, pi_movsy):  
         movx, movy = obtain_correlation_mov(p1, p2, canny=canny)
+        print(pi_prev.area_sz, movx)
         fx = pi_prev.area_sz-movx
         fy = pi_prev.area_sz-movy
         mx[:] = fx
@@ -435,4 +441,4 @@ def fix_video2(videopath, nzoom = 0.5, window_size = 0.25, margin = 10):
 if __name__ == "__main__":
     fpath = "/home/dazmer/Videos/non_stabilized3.mp4"
     # fix_video(fpath)
-    view_dense(fpath, nzoom=1, window_size=0.01, area_search=0.03, canny=True)
+    view_dense(fpath, nzoom=1, window_size=0.021, area_search=0, canny=True)
