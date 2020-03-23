@@ -33,7 +33,7 @@ def colorflow_white(flow):
 
 
 def arrow_flow(vects,im):
-    scale = 4
+    scale = 8
     vects_resized = cv2.resize(vects,None,fx=1/scale,fy=1/scale,interpolation=cv2.INTER_LINEAR)
     u = vects_resized[:,:,0]
     v = vects_resized[:,:,1]
@@ -49,13 +49,13 @@ def arrow_flow(vects,im):
     
     for i in range(u.shape[0]):
         for j in range(u.shape[1]):
-            if u[i,j] > 0 and v[i,j] > 0: 
+            if u[i,j] > 0 or v[i,j] > 0: 
                 
                 idxi.append(i*scale)
                 idxj.append(j*scale)
                 
-                uu.append(2*scale*u[i,j])
-                vv.append(2*scale*v[i,j])
+                uu.append(u[i,j])
+                vv.append(v[i,j])
                 
                 
     # s=3

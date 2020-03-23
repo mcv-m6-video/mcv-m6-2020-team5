@@ -342,6 +342,15 @@ def test(w=0.0,v=0.0):
     res = votation_flow(test_flow)
     plt.imshow(res)
 
+class Enumeration(object):
+    def __init__(self):
+        pass
+    def __iter__(self):
+        li = [getattr(self,attr) for attr in dir(self) if not callable(getattr(self, attr)) and not attr.startswith("__")]
+        for x in li:
+            yield x
+            
+
 #plt.close("all")
 #test(0,0)
 #test(0.5,0)
