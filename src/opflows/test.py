@@ -11,27 +11,30 @@ import flowmetrics
 import block_matching as bm1
 import block_matching2 as bm2 
 
+import os
+curr_dir = current_fpath = os.path.realpath(__file__)
+curr_dir = curr_dir.rsplit("/", 3)[0]
 def main():
     
     
     method = ['block_matching', 'coarse2fine', 'DenseCV', 'HS', 'TVL', 'LK']
     
-    sel_method = 4
+    sel_method = 0
     pyr = True
     
-    gt_paths = ["/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/noc_000045_10.png",
-                "/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/noc_000157_10.png"]
+    gt_paths = [curr_dir+"/datasets/of_pred/noc_000045_10.png",
+                curr_dir+"/datasets/of_pred/noc_000157_10.png"]
     
     select_image = 0 #0: image 1, 2: image 2
     
-    im = cv2.imread("/Users/sergi/mcv-m6-2020-team5/datasets/results/LKflow_000157_10.png", cv2.IMREAD_UNCHANGED)
+    im = cv2.imread(curr_dir+"/datasets/results/LKflow_000157_10.png", cv2.IMREAD_UNCHANGED)
     
     if select_image == 0:
-        im1 = cv2.imread("/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/000045_10.png", cv2.IMREAD_UNCHANGED )
-        im2 = cv2.imread("/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/000045_11.png", cv2.IMREAD_UNCHANGED )
+        im1 = cv2.imread(curr_dir+"/datasets/of_pred/000045_10.png", cv2.IMREAD_UNCHANGED )
+        im2 = cv2.imread(curr_dir+"/datasets/of_pred/000045_11.png", cv2.IMREAD_UNCHANGED )
     elif select_image == 1:
-        im1 = cv2.imread("/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/000157_10.png", cv2.IMREAD_UNCHANGED )
-        im2 = cv2.imread("/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/000157_11.png", cv2.IMREAD_UNCHANGED )
+        im1 = cv2.imread(curr_dir+"/datasets/of_pred/000157_10.png", cv2.IMREAD_UNCHANGED )
+        im2 = cv2.imread(curr_dir+"/datasets/of_pred/000157_11.png", cv2.IMREAD_UNCHANGED )
     
     gt = cv2.imread(gt_paths[select_image], cv2.IMREAD_UNCHANGED)
     
@@ -61,7 +64,8 @@ def main():
         else:
             flow = opticalFlowLKPyr(im1,im2)
     elif sel_method == 0:
-        flow = obtain_dense_mov(im1,im2)
+        flow = bm1.obtain_dense_mov(im1,im2, 
+                                    window_size=0.02, area_search=0)
     elif sel_method == 7:
         block_match2 = bm2.EBMA_searcher(15,15)
         im_warped, flow = block_match2.run(im1,im2)

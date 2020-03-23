@@ -276,6 +276,7 @@ def fix_video(videopath, nzoom = 0.3, window_size = 0.25,
     
 def view_dense(videopath, nzoom = 0.3, window_size = 0.25,
               canny=True, dense_strategy = obtain_dense_mov,
+              area_search = 0.0,
               max_mov=20, get_video=True):
     inversezoom = 1/nzoom 
    
@@ -318,8 +319,11 @@ def view_dense(videopath, nzoom = 0.3, window_size = 0.25,
         
         # img_next_z = cv2.resize(img_next_p, None, fx=nzoom, fy=nzoom) 
         # img_next_p = cv2.resize(img_next_p, None, fx=nzoom, fy=nzoom) 
-        movx, movy = dense_strategy(img_next_p, img_next_p, canny=canny)
-        movx, movy = movx*inversezoom, movy*inversezoom
+        flow = dense_strategy(img_next_p, img_next_p, 
+                              window_size=window_size,
+                              area_search = area_search, 
+                              canny=canny)
+        flow *= flow*inversezoom
         # accx = accx if max_mov is not None and accx >= max_mov else accx+movx
         # accy = accy if max_mov is not None and accy >= max_mov else accy+movy
         # s = f"ACC:{accx},{accy}  MOV:{movx},{movy}"
@@ -329,7 +333,7 @@ def view_dense(videopath, nzoom = 0.3, window_size = 0.25,
         # M = np.float32([[1,0,accy*inversezoom],[0,1,accx*inversezoom]])
         
         # img_next_w = cv2.warpAffine(img_next, M, (width, height))
-        rgb = colorflow_white(np.dstack([movx, movy]))
+        rgb = colorflow_white(flow)
         cv2.waitKey(1)
         z_placeholder[:,:] = rgb
         f_out = np.hstack((img_next_z, z_placeholder))
@@ -431,4 +435,4 @@ def fix_video2(videopath, nzoom = 0.5, window_size = 0.25, margin = 10):
 if __name__ == "__main__":
     fpath = "/home/dazmer/Videos/non_stabilized3.mp4"
     # fix_video(fpath)
-    view_dense(fpath)
+    view_dense(fpath, nzoom=1, window_size=0.01, area_search=0.03, canny=True)
