@@ -45,7 +45,6 @@ class EBMA_searcher():
                 new_flow[j,i,:] = flow[min(int(j / self.N),h_f-1), min(int(i / self.N),w_f-1),:]
         return new_flow
 
-    @jit
     def run(self, target_frame, anchor_frame):
         """
         Run!
