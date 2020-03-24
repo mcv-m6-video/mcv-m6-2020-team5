@@ -28,6 +28,7 @@ def natural_keys(text):
     return [ atoi(c) for c in re.split('(\d+)', text) ]
 
 class squarePatchIterator(object):
+    sq_id = 0
     def __init__(self, img, nSplits, 
                  w_padding=0, include_padding=False,
                  step_size=None, include_step=False):
@@ -36,7 +37,9 @@ class squarePatchIterator(object):
         self.nRows = int(nSplits)
         self.nCols = int(nSplits)
         self.w_padding = w_padding
-
+        self._s_sq_id = squarePatchIterator.sq_id
+        squarePatchIterator.sq_id += 1
+        
         if(w_padding>=0.5):
             raise(ValueError("Padding cannot be higher than 0.5: got ",w_padding))
 
@@ -119,7 +122,8 @@ class squarePatchIterator(object):
         if(m_xhgh <= self.img.shape[1]):
             if(m_yhgh <= self.img.shape[0]):
                 roi = self.img[ylow:yhgh, xlow:xhgh]
-
+                # cv2.imshow(f"roi{self._s_sq_id}", roi)
+                # cv2.waitKey(1)
                 self._col+=1
                 return roi 
             else:
@@ -141,6 +145,10 @@ def obtain_correlation_mov(patch1, patch2, canny=True):
     if(canny):
         patch1 = cv2.Canny(patch1, 10, 70)
         patch2 = cv2.Canny(patch2, 10, 70)
+        # cv2.imshow("canny1", patch1)
+        # cv2.imshow("canny2", patch2)
+        # cv2.waitKey(0)
+        
     red_corr = conv2(rotate180(patch1).astype(np.float), 
                                patch2.astype(np.float))
     hl = int(red_corr.shape[0]/2)+1
@@ -149,9 +157,9 @@ def obtain_correlation_mov(patch1, patch2, canny=True):
         red_corr = red_corr
         max_val = red_corr.max()
         
-        r255 = ((red_corr/max_val)*255).astype(np.uint8)
-        cv2.imshow("r255", r255)
-        cv2.waitKey(1)
+        # r255 = ((red_corr/max_val)*255).astype(np.uint8)
+        # cv2.imshow("r255_s", r255)
+        # cv2.waitKey(0)
         
         maxx, maxy = np.where(red_corr==max_val)
         maxx, maxy = maxx[0], maxy[0]
@@ -359,5 +367,5 @@ def view_dense(videopath, nzoom = 0.3, window_size = 0.25,
 
 if __name__ == "__main__":
     fpath = "/home/dazmer/Videos/non_stabilized5.mp4"
-    fix_video(fpath, max_mov=None)
-    # view_dense(fpath, nzoom=1, window_size=0.021, area_search=0, canny=True)
+    # fix_video(fpath, max_mov=None)
+    view_dense(fpath, nzoom=1, window_size=0.021, area_search=0, canny=True)

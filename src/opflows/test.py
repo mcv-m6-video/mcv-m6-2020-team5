@@ -24,7 +24,7 @@ curr_dir = curr_dir.rsplit("/", 3)[0]
 
 
 
-def main(window_size=0.2,area_search=0.05,step_size  =1):
+def main(window_size=0.2,area_search=0.05,step_size  =1, canny=True):
     
     
     method = ['block_matching', 'coarse2fine', 'DenseCV', 'HS', 'TVL', 'LK']
@@ -77,7 +77,8 @@ def main(window_size=0.2,area_search=0.05,step_size  =1):
         flow = bm1.obtain_dense_mov(im1,im2,
                                     window_size=window_size,
                                     area_search=area_search,
-                                    step_size=step_size)
+                                    step_size=step_size,
+                                    canny=canny)
     elif sel_method == 6:
         block_match2 = bm2.EBMA_searcher(15,15)
     
@@ -102,28 +103,33 @@ def main(window_size=0.2,area_search=0.05,step_size  =1):
     # print('PEPN')
     # print(pepn)
     return msen, pepn, flow, color_plot
-if __name__ == "__main__":
-    # step_sizes = [1, 0.5, 0.25, 0.125]
-    # window_sizes = [0.2, 0.15, 0.1, 0.05, 0.03, 0.025, 0.02, 0.0125, 0.01]
-    # area_search = [0.1, 0.09, 0.08, 0.07, 0.06, 0.05, 0.04, 0.025, 0.02, 0.0125]
+
+def grid_search():
+    step_sizes = [1, 0.5, 0.25, 0.125]
+    window_sizes = [0.2, 0.15, 0.1, 0.05, 0.03, 0.025, 0.02, 0.0125, 0.01, 0.005]
+    area_search = [0.1, 0.09, 0.08, 0.07, 0.06, 0.05, 0.04, 0.03, 0.025, 0.02, 0.0125, 0.01, 0]
+    # window_sizes=reversed(window_sizes)
+    # area_search = 
+    # step_sizes = [1, 0.5]
+    # window_sizes = [0.05, 0.025]
+    # area_search = [0.05, 0.025]
     
-    step_sizes = [1, 0.5]
-    window_sizes = [0.05, 0.025]
-    area_search = [0.05, 0.025]
-    
-    output_folder = "output/"
+    output_folder = "output_no_canny/"
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
         
     for sz in step_sizes:
         for wz in window_sizes:
-            for az in area_search:
+            for az in reversed(area_search):
                 save_imgs = True
                 print("==========================")
                 print(f"Executing for w_sz:{wz} a_sx:{az} s_sz:{sz}")
                 now = time.time()
                 try:
-                    msen, pepn, flow, rgb = main(window_size=wz,area_search=az,step_size=sz)
+                    msen, pepn, flow, rgb = main(window_size=wz,
+                                                 area_search=az,
+                                                 step_size=sz,
+                                                 canny=False)
                 except:
                     msen = "null"
                     pepn = "null"
@@ -144,7 +150,26 @@ if __name__ == "__main__":
                 register_vals["pepn"]=pepn
                 register_vals["time"]=difference
                 with open(output_folder+"registering.csv", "a+", newline="") as f:
-                        writer = csv.DictWriter(f, fieldnames=list(register_vals.keys()))
-                        writer.writerow(register_vals)
+                    writer = csv.DictWriter(f, fieldnames=list(register_vals.keys()))
+                    writer.writerow(register_vals)
                 print(f"Result: MSEN={msen} PEPN={pepn}, T_DIFF={difference}")
 
+
+
+if __name__ == "__main__":
+    # grid_search()
+    wz = 0.1
+    az = 0
+    sz = 1
+    fname = f"_{wz}_{az}_{sz}"
+    print(f"Executing for w_sz:{wz} a_sx:{az} s_sz:{sz}")
+    now = time.time()
+    msen, pepn, flow, rgb  = main(window_size=wz, area_search=az, step_size=sz)
+    later = time.time()
+    difference = int(later - now)
+    print("MSEN:", msen, "PEPN:", pepn)
+    with open("flow_matrix"+fname+".pkl", "wb+") as f:
+        pickle.dump(flow, f)
+    cv2.imwrite("rgb_image"+fname+".png", rgb)
+    print(f"Result: MSEN={msen} PEPN={pepn}, T_DIFF={difference}")
+                    
