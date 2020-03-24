@@ -4,8 +4,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-# def filter_null_flow(vec):
-#     for i in range()
+def get_plot_legend(size_x,size_y):
+    nx, ny = size_x,size_y
+    x = range(nx)
+    y = range(ny)
+    xv, yv = np.meshgrid(x, y)
+
+    xv = xv-(nx/2)
+    yv = yv-(ny/2)
+    
+    return np.dstack((xv[:,:], yv[:,:]))
+
 
 def colorflow_black(flow):
     w,h = flow.shape[:2]
@@ -34,7 +43,7 @@ def colorflow_white(flow):
     return rgb
 
 
-def arrow_flow(vects,im):
+def arrow_flow(vects,im, filter_zero=True):
     scale = 8
     vects_resized = cv2.resize(vects,None,fx=1/scale,fy=1/scale,interpolation=cv2.INTER_LINEAR)
     u = vects_resized[:,:,0]
@@ -51,7 +60,7 @@ def arrow_flow(vects,im):
     
     for i in range(u.shape[0]):
         for j in range(u.shape[1]):
-            if u[i,j] > 0 or v[i,j] > 0: 
+            if (u[i,j] > 0 or v[i,j] > 0) or not filter_zero: 
                 
                 idxi.append(i*scale)
                 idxj.append(j*scale)
