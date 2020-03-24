@@ -114,7 +114,11 @@ All the methods used in task 1 can be tested by changing the sel_method index to
 
 #### Task 2
 
+Our method for video stabilization, that uses Block Matching, can be executed using the following command:
 
+```
+python src/opflows/block_matching.py
+```
 
 The first off-the-shelf method for video stabilization, the one based on OpenCV, can be executed using the following command:
 
