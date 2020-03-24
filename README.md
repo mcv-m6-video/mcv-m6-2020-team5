@@ -94,7 +94,7 @@ python src/main.py --general_config detector.weights_path="../new_folder/detectr
 ```
 ## Week 4
 
-###Tasks
+### Tasks
 
 - Task 1: Optical Flow
     - Task 1.1: Optical Flow with Block Matching
