@@ -12,6 +12,7 @@ import cv2
 import time
 import datetime
 from os import path
+import opflows.visualization as opt_view
 
 def IoU(boxA, boxB):
 	# determine the (x, y)-coordinates of the intersection rectangle
@@ -197,17 +198,13 @@ class MultiTracker():
             # goal will be to match an input centroid to an existing
             # object centroid
             
+            next_box_prediction = self.predict_next_boxes(self.objects.values(),optical_flow_img)
+            
             ### COMPUTING DISTANCES ###
             centroid_dist = centroid_distances(self.objects.values(), rects, self.key)
-            if(self.ttype == "centroid"):
-                # D = dist.cdist(np.array(objectCentroids), inputCentroids)
-                D = centroid_dist
-            elif(self.ttype == "overlap"):
-                D = overlap_ratio(self.objects.values(), rects, self.key)
-            elif(self.ttype == "optical_flow_track"):
-                D = overlap_ratio(self.objects.values(), rects, self.key)
-            else:
-                raise(ValueError(f"ttype not recognized: {self.ttype}"))
+            
+            D = overlap_ratio(next_box_prediction, rects, self.key)
+            
             # in order to perform this matching we must (1) find the
             # smallest value in each row and then (2) sort the row
             # indexes based on their minimum values so that the row
@@ -234,7 +231,7 @@ class MultiTracker():
                 # val
                 if row in usedRows or col in usedCols:
                     continue
-                if self.ttype == "overlap" and D[row][col] >= (1-self.iou_threshold):
+                if D[row][col] >= (1-self.iou_threshold):
                     continue
                 if centroid_dist[row][col] > self.pixel_tolerance:
                     continue
@@ -283,3 +280,25 @@ class MultiTracker():
         if(self.status_save): 
             self.save_status()
         return self.objects
+    
+    def predict_next_boxes(self, rects, flow, movement_type="all_frames"):
+        
+        new_boxes = []
+        
+        for rect in rects:
+            xt, yt, xb, yb = rect
+            xt, yt, xb, yb = int(xt), int(yt), int(xb), int(yb)
+            partial_flow = flow[yt:yb,xt:xb,:]
+            
+            mean_flow = np.mean(np.mean(partial_flow, axis=0), axis=0)
+            
+            x_mov, y_mov = mean_flow[0],mean_flow[1]
+            
+            new_box = (xt+x_mov, yt+y_mov, xb+x_mov, yb+y_mov)
+            
+            if(movement_type == "mean_flow"):
+                new_box = ( np.mean((new_box[0],xt)), np.mean((new_box[1],yt)), 
+                            np.mean((new_box[2],xb)), np.mean((new_box[3],yb)) )
+                 
+            new_boxes.append(new_box)
+        return new_boxes

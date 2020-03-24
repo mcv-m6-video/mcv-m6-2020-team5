@@ -98,7 +98,8 @@ def main(new_config):
         if(i > 0):
             old_frame = non_modified_frame
         ret, frame = cap.read()
-        non_modified_frame = frame.copy()
+        if(ret):
+            non_modified_frame = frame.copy()
         if(i == 0):
             old_frame = non_modified_frame
         
@@ -112,6 +113,10 @@ def main(new_config):
                     flow = cv2.calcOpticalFlowFarneback(old_frame,gray_img1, None, 0.5, 3, 15, 3, 5, 1.2, 0)
                 #predict over the frame
                 dt_rects = detect_func(frame)
+                
+                # flow_rgb = opt_view.colorflow_white(flow)
+                # cv2.imshow("orgflow",flow_rgb)
+                # cv2.waitKey()
                 
                 #filter results
                 dt_rects, _ = bbfilters(dt_rects, frame, **gconf.bbox_filter)
@@ -198,9 +203,9 @@ def main(new_config):
                     if(gconf.display.frames):
                         cv2.imshow(w_name, f_out.astype('uint8'))
                         
-                if(gconf.tracker.ttype == "optical_flow_track"):
-                    flow_rgb = opt_view.colorflow_white(flow)
-                    cv2.imshow("flow",flow_rgb)
+                # if(gconf.tracker.ttype == "optical_flow_track"):
+                #     flow_rgb = opt_view.colorflow_white(flow)
+                #     cv2.imshow("flow",flow_rgb)
                 # Press Q on keyboard to  exit
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break

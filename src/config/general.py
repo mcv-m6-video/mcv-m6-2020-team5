@@ -6,7 +6,7 @@ Created on Sat Mar  7 11:39:40 2020
 """
 from .utils import AttrDict
  
-START_PROCESSING_AT = -1
+START_PROCESSING_AT = 0
 STOP_AT = -1
 VISUALIZE = True
 WEIGHTS = "../weights"
@@ -20,11 +20,11 @@ video.start_save = 3000
 video.duration = 3      #duration in seconds
 
 tracker = AttrDict()
-tracker.ttype = "sort"
+tracker.ttype = "optical_flow_track"
 tracker.Multi = AttrDict()
 tracker.Multi.maxDisappeared=4
 tracker.Multi.pix_tol=100
-tracker.Multi.iou_threshold=0
+tracker.Multi.iou_threshold=0.1
 tracker.Sort = AttrDict()
 tracker.Sort.max_age=0 # max age one can have without having a hit and being deleted
 tracker.Sort.min_age=0 # min age one can have without being registered
@@ -35,7 +35,7 @@ tracker.Sort.iou_threshold=0.3
 # PRINT CONFIGURATION
 display = AttrDict()
 display.iou_plot = False
-display.frames   = True
+display.frames   = False
 
 pout = AttrDict()           #Print Out, to avoid re-declare "print" function
 pout.activate = True            # Whether activate or not prints
