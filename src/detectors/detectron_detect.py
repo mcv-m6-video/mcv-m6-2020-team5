@@ -284,6 +284,6 @@ def get_dicts(N_frames, method, gt_frames):
         dataset_train = pickle.load(pkl_file_train, fix_imports=True, encoding='ASCII', errors='strict')
         dataset_val = pickle.load(pkl_file_val, fix_imports=True, encoding='ASCII', errors='strict')
   
-    print(len(dataset_train))
+    # print(len(dataset_train))
     return dataset_train, dataset_val
    

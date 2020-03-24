@@ -8,6 +8,7 @@ Created on Fri Mar 13 18:00:38 2020
 from .multi_tracker import MultiTracker
 # from .box_tracker import BoxTracker
 from .sortTracker import SortTracker
+from .opticalflow_tracker import MultiTracker
 
 def get_centroid(rect):
     x1, y1, x2, y2 = rect
@@ -28,6 +29,8 @@ def obtain_tracker(ttype, config):
     elif(config.ttype == "sort"):
         # from .sort import sort
         tracker = SortTracker(key=get_centroid, **config.Sort)
+    elif(config.ttype == "optical_flow_track"):
+        tracker = MultiTracker(ttype=config.ttype, key=get_centroid, **config.Multi)
     else:
         raise(ValueError(f"Tracker type not recognized: {ttype}"))
     return tracker
