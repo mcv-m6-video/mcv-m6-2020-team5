@@ -20,7 +20,9 @@ def colorflow_black(flow):
     return rgb
 
 def colorflow_white(flow):
+     
     w,h = flow.shape[:2]
+    
     hsv = np.ones((w,h,3), dtype=np.uint8)*255
 
     mag, ang = cv2.cartToPolar(flow[..., 0], flow[..., 1])
