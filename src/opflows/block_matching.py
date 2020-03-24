@@ -28,21 +28,55 @@ def natural_keys(text):
     return [ atoi(c) for c in re.split('(\d+)', text) ]
 
 class squarePatchIterator(object):
-    def __init__(self, img, nSplits, w_padding=0, include_padding=False):
+    def __init__(self, img, nSplits, 
+                 w_padding=0, include_padding=False,
+                 step_size=None, include_step=False):
         self.img = img
         self.nSplits = int(nSplits)
         self.nRows = int(nSplits)
         self.nCols = int(nSplits)
         self.w_padding = w_padding
-        # self.s_w_padding = simulated_w_padding
+
         if(w_padding>=0.5):
             raise(ValueError("Padding cannot be higher than 0.5: got ",w_padding))
-        # Dimensions of the image
+
         self.size = img.shape[0]
         self.w_padding = int(self.size*w_padding)
         self.start_xy = self.w_padding
-        self.psize = int((self.size-self.start_xy*2)/self.nSplits)
         
+        remaining_space = (self.size-self.start_xy*2)
+        
+        if(step_size is None):
+            if(include_step):
+                raise(ValueError(f"include_step is set, but got step_size: {step_size}"))
+            include_step = False
+            step_size = 1
+            fpsize = int(remaining_space/(self.nSplits))
+            spsize = int(remaining_space/(self.nSplits/step_size))
+            
+        elif(step_size == 0):
+            fpsize = int(remaining_space/(self.nSplits))
+            spsize = 1
+        else:
+            fpsize = int(remaining_space/(self.nSplits))
+            spsize = int(remaining_space/(self.nSplits/step_size))
+            # if(fpsize+spsize == 0):
+            #     raise(ValueError("Step size too slow!, try using another aproximation"))
+        if(include_step):
+            nstep_size = 1 if step_size is None else step_size
+            if(nstep_size > 1): 
+                raise(ValueError("step_size must be lower than 1"))
+            self.psize = fpsize
+            self.r_size = 0
+        else:
+            self.psize = spsize
+            self.r_size = fpsize - spsize
+        if(spsize == 0):
+            raise(ValueError("Step size resultant is zero!! try increasing step_size"))
+        self.step_size = spsize
+        
+        self.include_step = include_step
+
         self._row = 0
         self._col = 0
         
@@ -58,9 +92,8 @@ class squarePatchIterator(object):
         return self
     def __next__(self):
         
-        # print(f"executing {self._row} {self._col}, not bigger than {self.nCols}")
-        yp = self._col*self.psize
-        xp = self._row*self.psize
+        yp = self._col*self.step_size
+        xp = self._row*self.step_size
         
         ylow = self.start_xy+yp
         xlow = self.start_xy+xp
@@ -78,13 +111,15 @@ class squarePatchIterator(object):
             yhgh = m_yhgh
             xlow = m_xlow
             xhgh = m_xhgh
-        # print(self._row, self._col,yp,self.size,self.start_xy)
+        m_ylow += self.r_size
+        m_xlow += self.r_size
+        m_yhgh += self.r_size
+        m_xhgh += self.r_size
+
         if(m_xhgh <= self.img.shape[1]):
             if(m_yhgh <= self.img.shape[0]):
                 roi = self.img[ylow:yhgh, xlow:xhgh]
-                # print(roi.shape)
-                # cv2.imshow("roi", roi)
-                # cv2.waitKey(0)
+
                 self._col+=1
                 return roi 
             else:
@@ -108,18 +143,21 @@ def obtain_correlation_mov(patch1, patch2, canny=True):
         patch2 = cv2.Canny(patch2, 10, 70)
     red_corr = conv2(rotate180(patch1).astype(np.float), 
                                patch2.astype(np.float))
+    hl = int(red_corr.shape[0]/2)+1
+    maxx, maxy = hl, hl
     if(np.count_nonzero(patch1) and np.count_nonzero(patch2)):
+        red_corr = red_corr
         max_val = red_corr.max()
+        
         r255 = ((red_corr/max_val)*255).astype(np.uint8)
         cv2.imshow("r255", r255)
         cv2.waitKey(1)
+        
         maxx, maxy = np.where(red_corr==max_val)
         maxx, maxy = maxx[0], maxy[0]
-        # diffx = (sx2-sx1) - maxx
-        # diffy = (sx2-sx1) - maxy
-        return maxx, maxy
-    else:
-        return patch1.shape[0],patch1.shape[1]
+
+    return -(maxx-hl), -(maxy-hl)
+
 
 def obtain_mean_mov_squared(img_prev, img_next, 
                             block_match_func = obtain_correlation_mov,
@@ -127,65 +165,43 @@ def obtain_mean_mov_squared(img_prev, img_next,
     splits = int(1/window_size)
     pi_prev = squarePatchIterator(img_prev, splits)
     pi_next = squarePatchIterator(img_next, splits)
-    
-    # movsx = np.zeros((pi_prev.get_n_patches()))
-    # movsy = np.zeros((pi_prev.get_n_patches()))
+
     movsx = []
     movsy = []
     for p1, p2 in zip(pi_prev, pi_next):  
-        # e1 = skimage.measure.shannon_entropy(p1)
-        # e2 = skimage.measure.shannon_entropy(p2)
-        # if(e1 < 6 or e2 < 6): continue
-        # print(f"Entropy: {e1} {e2}")
+
         movx, movy = obtain_correlation_mov(p1, p2, canny=canny)
         movsx.append(movx)
         movsy.append(movy)
         stack_imgs = np.hstack((p1, p2))
-        # cv2.imshow("res",stack_imgs)
-        # cv2.waitKey(1)
-    return pi_prev.psize-np.mean(movsx), pi_next.psize-np.mean(movsy)
+
+    return np.mean(movsx), np.mean(movsy)
 
 def obtain_dense_mov(img_prev, img_next,
                     area_search = 0.0,
                     black_match_func = obtain_correlation_mov,
-                    window_size=0.05, canny=True):
-    # if(area_search < window_size):
-    #     raise(ValueError("Area of search must be bigger than window size"))
+                    window_size=0.05,
+                    step_size=None,
+                    canny=True):
+    
     movsx = np.zeros((img_prev.shape[:2]))
     movsy = np.zeros((img_prev.shape[:2]))
     
     splits = int(1/window_size)
     
-    pi_prev = squarePatchIterator(img_prev, splits,area_search, False)
-    pi_next = squarePatchIterator(img_next, splits,area_search,True)
-    pi_movsx = squarePatchIterator(movsx, splits,area_search,False)
-    pi_movsy = squarePatchIterator(movsy, splits,area_search,False)
+    pi_prev = squarePatchIterator(img_prev, splits,area_search,True ,step_size, True)
+    pi_next = squarePatchIterator(img_next, splits,area_search,False,step_size, True)
     
-    # movsx = np.zeros((pi_prev.get_n_patches()))
-    # movsy = np.zeros((pi_prev.get_n_patches()))
-    # movsx = np.zeros
-    # start_xy = pi_prev.start_xy
-    # movsx = []
-    # movsy = []
-    # movsx_l = []
-    # movsy_l = []
+    pi_movsx = squarePatchIterator(movsx, splits, area_search,False,step_size, False)
+    pi_movsy = squarePatchIterator(movsy, splits, area_search,False,step_size, False)
+
     for p1, p2, mx, my in zip(pi_prev, pi_next, pi_movsx, pi_movsy):  
         movx, movy = obtain_correlation_mov(p1, p2, canny=canny)
-        print(pi_prev.area_sz, movx)
-        fx = pi_prev.area_sz-movx
-        fy = pi_prev.area_sz-movy
+        
+        fx = movx
+        fy = movy
         mx[:] = fx
         my[:] = fy
-        # print(f"MOV X: {fx} MOV Y: {fy}")
-        # movsx_l.append(movx)
-        # movsy_l.append(movy)
-        # movsx.append(movx)
-        # movsy.append(movy)
-        # stack_imgs = np.hstack((p1, p2))
-        # cv2.imshow("res",stack_imgs)
-        # cv2.waitKey()
-    # m_movx, m_movy = pi_prev.psize-np.mean(movsx), pi_next.psize-np.mean(movsy)
-    
     flow = np.stack((movsx, movsy), axis=2)
     return flow
 
@@ -251,15 +267,12 @@ def fix_video(videopath, nzoom = 0.3, window_size = 0.25,
         pbar.update()
         img_next_p = img_next[y1:y2, x1:x2, 0]
         img_next_z = cv2.resize(img_next_p, None, fx=nzoom, fy=nzoom) 
-        
-        # img_next_z = cv2.resize(img_next_p, None, fx=nzoom, fy=nzoom) 
-        # img_next_p = cv2.resize(img_next_p, None, fx=nzoom, fy=nzoom) 
+
         movx, movy = fix_strategy(img_prev_z, img_next_z, canny=canny)
+
         accx = accx if max_mov is not None and accx >= max_mov else accx+movx
         accy = accy if max_mov is not None and accy >= max_mov else accy+movy
-        # s = f"ACC:{accx},{accy}  MOV:{movx},{movy}"
-        # print(s)
-        # print(movx, movy)
+
         M = np.float32([[1,0,accy*inversezoom],[0,1,accx*inversezoom]])
         img_next_w = cv2.warpAffine(img_next, M, (width, height))
         cv2.imshow("Wrapped", img_next_w)
@@ -298,10 +311,6 @@ def view_dense(videopath, nzoom = 0.3, window_size = 0.25,
     
     
     center = (width/2.0, height/2.0)
-    # y1 = 0
-    # x1 = int(center[0] - int(height/2))
-    # y2 = int(y1+height)
-    # x2 = int(x1+height)
 
     img_prev_p = img_prev[:,:, 0]
     img_prev_z = cv2.resize(img_prev_p, None, fx=nzoom, fy=nzoom) 
@@ -321,24 +330,13 @@ def view_dense(videopath, nzoom = 0.3, window_size = 0.25,
         img_next_z = cv2.resize(img_next, None, fx=nzoom, fy=nzoom) 
         z_placeholder = np.zeros_like(img_next_z)
         img_next_p = img_next_z[:,:, 0]
-        
-        
-        # img_next_z = cv2.resize(img_next_p, None, fx=nzoom, fy=nzoom) 
-        # img_next_p = cv2.resize(img_next_p, None, fx=nzoom, fy=nzoom) 
+
         flow = dense_strategy(img_next_p, img_next_p, 
                               window_size=window_size,
                               area_search = area_search, 
                               canny=canny)
         flow *= flow*inversezoom
-        # accx = accx if max_mov is not None and accx >= max_mov else accx+movx
-        # accy = accy if max_mov is not None and accy >= max_mov else accy+movy
-        # s = f"ACC:{accx},{accy}  MOV:{movx},{movy}"
-        # print(s)
-        # print(movx, movy)
-        
-        # M = np.float32([[1,0,accy*inversezoom],[0,1,accx*inversezoom]])
-        
-        # img_next_w = cv2.warpAffine(img_next, M, (width, height))
+
         rgb = colorflow_white(flow)
         cv2.waitKey(1)
         z_placeholder[:,:] = rgb
@@ -357,88 +355,9 @@ def view_dense(videopath, nzoom = 0.3, window_size = 0.25,
     cap.release()
     if(out_cap is not None): 
         out_cap.release()
-    
-def fix_video2(videopath, nzoom = 0.5, window_size = 0.25, margin = 10): 
-    inversezoom = 1/nzoom 
-    
-    cap = cv2.VideoCapture(videopath)
-    frame_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-    
-    width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))   # float
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))  # float
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    center = (width/2.0, height/2.0)
-    
-    y1 = 0
-    x1 = int(center[0] - int(height/2))
-    y2 = int(y1+height)
-    x2 = int(x1+height)
         
-
-    ret, img_prev = cap.read()
-    img_prev = img_prev[y1:y2, x1:x2, 0]
-    img_prev = cv2.resize(img_prev, None, fx=nzoom, fy=nzoom) 
-    img_prev = cv2.Canny(img_prev, 10, 70)
-    
-    nheight, nwidth = img_prev.shape
-    new_center = int(nwidth/2.0), int(nheight/1.5)
-    
-    sx1 = int(new_center[1]-int(nheight*window_size)) #Tocar això fa moure la finestra en vertical
-    sy1 = int(new_center[0]-int(nheight*window_size)) #Tocar això fa moure la finestra en horitzontal
-    sx2 = int(new_center[1]+int(nheight*window_size)) #Tocar això fa moure la finestra en vertical
-    sy2 = int(new_center[0]+int(nheight*window_size)) #Tocar això fa moure la finestra en horitzontal
-    
-    matrices = []
-    pbar = tqdm(desc="Frame", total=frame_count)
-    ret, img_next = cap.read()
-    while cap.isOpened() and ret:
-        
-        
-        
-        img_next = img_next[y1:y2, x1:x2, 0]
-        img_next = cv2.resize(img_next, None, fx=nzoom, fy=nzoom) 
-        img_next = cv2.Canny(img_next, 10, 70)
-        
-        #TODO Magic edge trick
-        pbar.update()
-        red_corr = conv2(rotate180(img_next[sx1:sx2, sy1:sy2]), 
-                         np.array(img_prev[sx1:sx2,sy1:sy2],dtype=np.float))
-        maxx, maxy = (np.where(red_corr==red_corr.max())[0][0], 
-                      np.where(red_corr==red_corr.max())[1][0])
-        diffx = (sx2-sx1) - maxx
-        diffy = (sx2-sx1) - maxy
-        M = np.float32([[1,0,-diffy],[0,1,-diffx]])
-        matrices.append(M)
-        img_dst = cv2.warpAffine(img_next,M,(nwidth,nheight))
-    
-        cv2.imshow("Where it went", img_dst[sx1:sx2, sy1:sy2])
-        cv2.waitKey(1)
-        # pl.imshow(img_dst[sx1:sx2, sy1:sy2])
-        # pl.title("WHERE IT WENT")
-        # pl.pause(.1)
-        # pl.draw()
-    
-        img_prev = img_dst
-        ret, img_next = cap.read()
-    cap.release()
-    cap = cv2.VideoCapture(videopath)
-    # cap.set(cv2.CAP_PROP_POS_FRAMES, 0);
-
-    i=0
-    ret=True
-    while cap.isOpened() and ret:
-        ret, img_next = cap.read()
-        cv2.imshow("non-wrapped", img_next)
-        M = matrices[i]
-        M[0][2] = int(M[0][2]*inversezoom)
-        M[1][2] = int(M[1][2]*inversezoom)
-        img_next = cv2.warpAffine(img_next, M, (width, height))
-        # img_cutted = img_next[margin:(height-margin), margin:(width-margin)]  
-        cv2.imshow("Wrapped", img_next)
-        cv2.waitKey(100)
-        i+=1        
 
 if __name__ == "__main__":
-    fpath = "/home/dazmer/Videos/non_stabilized3.mp4"
-    # fix_video(fpath)
-    view_dense(fpath, nzoom=1, window_size=0.021, area_search=0, canny=True)
+    fpath = "/home/dazmer/Videos/non_stabilized5.mp4"
+    fix_video(fpath, max_mov=None)
+    # view_dense(fpath, nzoom=1, window_size=0.021, area_search=0, canny=True)

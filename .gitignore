@@ -1,6 +1,9 @@
 datasets
 src/plots
 models
+src/opflows/output/*
+*.pkl
+*.csv
 
 *.avi
 *.mp4
