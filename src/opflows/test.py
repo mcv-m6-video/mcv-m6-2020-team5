@@ -1,4 +1,5 @@
 import cv2
+from skimage.io import imread
 import numpy as np
 from decode import decode_optical_flow
 from visualization import colorflow_white,arrow_flow
@@ -9,14 +10,16 @@ from interpolation.tvl1 import tvl1_simple, opticalFlowTVL1Pyr
 from interpolation.lucas_kanade import opticalFlowLK, opticalFlowLKPyr
 import flowmetrics
 import block_matching
+from copy import deepcopy
+from tfoptflow.tfoptflow.model_pwcnet import ModelPWCNet, _DEFAULT_PWCNET_TEST_OPTIONS
 
 def main():
     
     
-    method = ['block_matching', 'coarse2fine', 'DenseCV', 'HS', 'TVL', 'LK']
+    method = ['block_matching', 'coarse2fine', 'DenseCV', 'HS', 'TVL', 'LK', 'PWCNet']
     
-    sel_method = 4
-    pyr = True
+    sel_method = 6
+    pyr = False
     
     gt_paths = ["/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/noc_000045_10.png",
                 "/Users/sergi/mcv-m6-2020-team5/datasets/of_pred/noc_000157_10.png"]
@@ -61,9 +64,42 @@ def main():
             flow = opticalFlowLKPyr(im1,im2)
     elif sel_method == 0:
         flow = obtain_dense_mov(im1,im2)
+    elif sel_method == 6:
+        
+        gpu_devices = ['/device:CPU:0']  
+        controller = '/device:CPU:0'
+        
+        ckpt_path = '/Users/sergi/mcv-m6-2020-team5/src/opflows/tfoptflow/models/pwcnet-lg-6-2-multisteps-chairsthingsmix/pwcnet.ckpt-595000'
+        
+        nn_opts = deepcopy(_DEFAULT_PWCNET_TEST_OPTIONS)
+        nn_opts['verbose'] = True
+        nn_opts['ckpt_path'] = ckpt_path
+        nn_opts['batch_size'] = 1
+        nn_opts['gpu_devices'] = gpu_devices
+        nn_opts['controller'] = controller
+        nn_opts['use_dense_cx'] = True
+        nn_opts['use_res_cx'] = True
+        nn_opts['pyr_lvls'] = 6
+        nn_opts['flow_pred_lvl'] = 2
+        nn_opts['adapt_info'] = (1, 376, 1241, 2)
+        
+        nn = ModelPWCNet(mode='test', options=nn_opts)
+        nn.print_config()
+        
+        img_pairs = []
+        img_pairs.append((cv2.cvtColor(im1, cv2.COLOR_GRAY2RGB),cv2.cvtColor(im2, cv2.COLOR_GRAY2RGB)))
+        print(np.asarray(img_pairs).shape)
+        
+        flow = nn.predict_from_img_pairs(img_pairs, batch_size=1, verbose=False)
+        
+        flow = np.asarray(flow)
+        flow = np.squeeze(flow,axis = 0)
     else:
         print("El método seleccionado no es válido.")            
-        
+    
+    if type(flow) is tuple:
+        movsx, movsy, reliab = flow
+        flow = np.stack((movsx, movsy), axis=2)    
         
     color_plot = colorflow_white(flow)
     cv2.imshow("color_plot",color_plot)
