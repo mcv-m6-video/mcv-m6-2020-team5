@@ -92,6 +92,51 @@ The parameters that can be modified can be found on the src/config/general.py fi
 ```
 python src/main.py --general_config detector.weights_path="../new_folder/detectron.weights"
 ```
+## Week 4
+
+### Tasks
+
+- Task 1: Optical Flow
+    - Task 1.1: Optical Flow with Block Matching
+    - Task 1.2: Off-the-shelf Optical Flow
+- Task 2: Video Stabilization
+    - Task 2.1: Video Stabilization with Block Matching
+    - Task 2.2: Off-the-shelf Video Stabilization
+- Task 3: Object Tracking
+    - Task 3.1: Object Tracking with Optical Flow
+
+### Execution
+Copy the dataset into the same folder as this repository.
+
+#### Task 1
+
+All the methods used in task 1 can be tested by changing the sel_method index to the one of the desired method from the src/opflows/test.py file. Then we can just execute the test.py file. 
+
+#### Task 2
+
+Our method for video stabilization, that uses Block Matching, can be executed using the following command:
+
+```
+python src/opflows/block_matching.py
+```
+
+The first off-the-shelf method for video stabilization, the one based on OpenCV, can be executed using the following command:
+
+```
+python src/scripts/video_stabilizer.py
+```
+
+However, it might be interesting to enter the file and change the path to the videos we are working on.
+
+The other off-the-shelf method for video stabilization, the Kamran Video Stabilizer, is implemented on Matlab and need to be executed from there. It can be executed using the main.m file located on src/scripts/Kamran_video_stabilizer/main.m.
+
+#### Task 3
+
+To execute task 3 you can just execute the main.py file or just execute the following command on the terminal:
+
+```
+python src/main.py --general_config tracker.ttype = "optical_flow_track"
+```
 
 
  

@@ -27,17 +27,44 @@ def natural_keys(text):
     '''
     return [ atoi(c) for c in re.split('(\d+)', text) ]
 
-class squarePatchIterator(object):
-    sq_id = 0
+def construct_replicated_img(img, padding_type="zeros"):
+    h, w = img.shape[:2]
+    z = np.zeros((h*3, w*3))
+    z[h:h*2, w:w*2] = img
+    
+    if(padding_type=="mirror"):
+        hz = cv2.flip(img, 1)
+        z[h  :h*2,   :w] = hz
+        z[h  :h*2,w*2: ] = hz
+        
+        vz = cv2.flip(img, 0)
+        z[ :h, w:w*2] = vz
+        z[h*2:,w:w*2] = vz
+        
+        rz = cv2.flip(hz, 0)
+        z[   :h,  :w] = rz
+        z[   :h,w*2:] = rz
+        z[h*2: ,  :w] = rz
+        z[h*2: ,w*2:] = rz
+    elif(padding_type in ["zeros","zero"]):
+        pass
+    else:
+        raise(ValueError(f"padding_type not recognized: {padding_type}"))
+    return z.astype(np.uint8)
+
+class squarePatchIterator1(object):
+    # sq_id = 0
     def __init__(self, img, nSplits, 
                  w_padding=0, include_padding=False,
-                 step_size=None, include_step=False):
+                 step_size=None, include_step=False,):
         self.img = img
+        # self.r_img = construct_replicated_img(img)
+        
         self.nSplits = int(nSplits)
         self.nRows = int(nSplits)
         self.nCols = int(nSplits)
         self.w_padding = w_padding
-        self._s_sq_id = squarePatchIterator.sq_id
+        # self._s_sq_id = squarePatchIterator.sq_id
         squarePatchIterator.sq_id += 1
         
         if(w_padding>=0.5):
@@ -134,6 +161,112 @@ class squarePatchIterator(object):
         
         return self.__next__()
 
+def trunc_int(val, mn, mx):
+    val = mn if val < mn else val
+    val = mx if val > mx else val
+    return val
+    
+class squarePatchIterator(object):
+    # sq_id = 0
+    def __init__(self, 
+                 img, 
+                 w_margin, 
+                 w_padding=0,
+                 padding_type="mirror",
+                 from_original=False):
+        self.img = img
+        h, w = self.img.shape[:2]
+        
+        self.r_img = construct_replicated_img(img, padding_type=padding_type)
+        
+        if(type(w_margin)==float):
+            if(w_margin > 1):
+                raise(ValueError(f"if its float, w_margin is above 1: {w_margin}"))
+            if(w_margin != 0):
+                w_margin = int(min(h,w)/(int(1/w_margin))/2)
+            else:
+                w_margin = 0
+
+        # self.nSplits = int(nSplits)
+
+        if(type(w_padding)==float):
+            if(w_padding > 1):
+                raise(ValueError(f"if its float, w_padding is above 1: {w_padding}"))
+            if(w_padding > 0):
+                w_padding = int(min(h,w)/(int(1/w_padding)))
+            
+        
+        # self._s_sq_id = squarePatchIterator.sq_id
+        # squarePatchIterator.sq_id += 1
+
+        self.start = self.img.shape
+
+
+        self._row = 0
+        self._col = 0
+        
+        
+        # self.include_padding = include_padding    
+        
+        self.w_margin = w_margin + 1
+        self.w_padding = int(w_padding)
+        self.t_margin = self.w_margin + self.w_padding
+        self.step = self.w_margin*2
+        self.from_original = from_original
+        print("Final measurements:")
+        print(f" - w_margin: {self.w_margin}")
+        print(f" - w_paddin: {self.w_padding}")
+        print(f" - t_margin: {self.t_margin}")        
+        print(f" -     step: {self.step}     ")
+    def __iter__(self):
+        return self
+    def __next__(self):
+        
+        yp = self._col*self.step
+        xp = self._row*self.step
+
+        ylow = yp-self.t_margin
+        yhgh = yp+self.t_margin
+        
+        xlow = xp-self.t_margin
+        xhgh = xp+self.t_margin
+        
+        l_ylow = self.start[0]+ylow
+        l_xlow = self.start[1]+xlow
+        
+        l_yhgh = self.start[0]+yhgh
+        l_xhgh = self.start[1]+xhgh
+
+        # if( ylow >= 0 and xlow >= 0)
+        if(xp <= self.img.shape[1]):
+            if(yp <= self.img.shape[0]):
+                if( yp-self.step >= 0 and xp-self.step >= 0 and xp+self.step <= self.img.shape[1] ):
+                    # print(f"ylow:{ylow}, yhgh:{yhgh} xlow:{xlow} xhgh:{xhgh}")
+                    if(not self.from_original):
+                        roi = self.r_img[l_ylow:l_yhgh, l_xlow:l_xhgh]
+                    else:
+                        ylow = trunc_int(ylow, 0, self.img.shape[0])
+                        xlow = trunc_int(xlow, 0, self.img.shape[1])
+                        yhgh = trunc_int(yhgh, 0, self.img.shape[0])
+                        xhgh = trunc_int(xhgh, 0, self.img.shape[1])  
+                        roi = self.img[ylow:yhgh, xlow:xhgh]
+                    # cv2.imshow("roi", roi)
+                    # cv2.waitKey(1)
+                    # print(self._s_sq_id, self._col, self._row)
+                    self._col+=1
+                    return roi 
+                else:
+                    self._col += 1
+            else:
+                self._col = 0
+                self._row +=1
+        else:
+            raise(StopIteration())
+        
+        return self.__next__()
+
+
+
 def rotate180(img):
     (h, w) = img.shape[:2]
     center = (w / 2, h / 2)
@@ -157,9 +290,9 @@ def obtain_correlation_mov(patch1, patch2, canny=True):
         red_corr = red_corr
         max_val = red_corr.max()
         
-        # r255 = ((red_corr/max_val)*255).astype(np.uint8)
-        # cv2.imshow("r255_s", r255)
-        # cv2.waitKey(0)
+        r255 = ((red_corr/max_val)*255).astype(np.uint8)
+        cv2.imshow("r255_s", r255)
+        cv2.waitKey(1)
         
         maxx, maxy = np.where(red_corr==max_val)
         maxx, maxy = maxx[0], maxy[0]
@@ -170,10 +303,14 @@ def obtain_correlation_mov(patch1, patch2, canny=True):
 def obtain_mean_mov_squared(img_prev, img_next, 
                             block_match_func = obtain_correlation_mov,
                             window_size=0.25, canny=True):
-    splits = int(1/window_size)
-    pi_prev = squarePatchIterator(img_prev, splits)
-    pi_next = squarePatchIterator(img_next, splits)
-
+    # splits = int(1/window_size)
+    # pi_prev = squarePatchIterator(img_prev, splits)
+    # pi_next = squarePatchIterator(img_next, splits)
+    
+    # splits = int(1/window_size)
+    pi_prev = squarePatchIterator(img_prev, window_size)
+    pi_next = squarePatchIterator(img_next, window_size)
+    
     movsx = []
     movsy = []
     for p1, p2 in zip(pi_prev, pi_next):  
@@ -181,36 +318,66 @@ def obtain_mean_mov_squared(img_prev, img_next,
         movx, movy = obtain_correlation_mov(p1, p2, canny=canny)
         movsx.append(movx)
         movsy.append(movy)
-        stack_imgs = np.hstack((p1, p2))
+        # stack_imgs = np.hstack((p1, p2))
 
     return np.mean(movsx), np.mean(movsy)
 
+# def obtain_dense_mov(img_prev, img_next,
+#                     window_size=0.05,
+#                     area_search = 0.0,
+#                     step_size=None,
+#                     black_match_func = obtain_correlation_mov,
+#                     canny=True):
 def obtain_dense_mov(img_prev, img_next,
-                    area_search = 0.0,
-                    black_match_func = obtain_correlation_mov,
                     window_size=0.05,
+                    w_padding = 0.0,
                     step_size=None,
+                    black_match_func = obtain_correlation_mov,
                     canny=True):
+    # print("window size:", window_size)
+    # print("w_padding", w_padding)
+    # print("step_size", step_size)
     
     movsx = np.zeros((img_prev.shape[:2]))
     movsy = np.zeros((img_prev.shape[:2]))
     
-    splits = int(1/window_size)
+    # splits = int(1/window_size)
+    # pi_prev = squarePatchIterator(img_prev, splits,area_search,True ,step_size, True)
+    # pi_next = squarePatchIterator(img_next, splits,area_search,False,step_size, True)
     
-    pi_prev = squarePatchIterator(img_prev, splits,area_search,True ,step_size, True)
-    pi_next = squarePatchIterator(img_next, splits,area_search,False,step_size, True)
+    # pi_movsx = squarePatchIterator(movsx, splits, area_search,False,step_size, False)
+    # pi_movsy = squarePatchIterator(movsy, splits, area_search,False,step_size, False)
+
+    if(step_size is None):
+        step_size = 0
+    elif(type(step_size)==float):
+        if(step_size > 1):
+            raise(ValueError(f"if its float, step_size is above 1: {step_size}"))
+        if(type(window_size)==float):
+            pass
+            # if(step_size > window_size):
+                # raise(ValueError(f"step cannot be bigger than window itself, there would be gaps"))
+        else:
+            raise(ValueError("If step is float, window_size has to be it also"))
+    fwsz = window_size*step_size
+    bwsz = window_size-fwsz
+    pi_prev = squarePatchIterator(img_prev, fwsz,w_padding)
+    pi_next = squarePatchIterator(img_next, fwsz,bwsz)
     
-    pi_movsx = squarePatchIterator(movsx, splits, area_search,False,step_size, False)
-    pi_movsy = squarePatchIterator(movsy, splits, area_search,False,step_size, False)
+    pi_movsx = squarePatchIterator(movsx, fwsz, 0, from_original=True)
+    pi_movsy = squarePatchIterator(movsy, fwsz, 0, from_original=True)
+
 
     for p1, p2, mx, my in zip(pi_prev, pi_next, pi_movsx, pi_movsy):  
+        # print("HOLA")
         movx, movy = obtain_correlation_mov(p1, p2, canny=canny)
         
         fx = movx
         fy = movy
         mx[:] = fx
         my[:] = fy
-    flow = np.stack((movsx, movsy), axis=2)
+        
+    flow = -np.stack((movsy, movsx), axis=2)
     return flow
 
     
@@ -239,7 +406,7 @@ def obtain_mov_just_for_center(img_prev, img_next,
     movy = ((sx2-sx1) - maxy)
     return movx, movy
     
-def fix_video(videopath, nzoom = 0.3, window_size = 0.25,
+def fix_video(videopath, nzoom = 0.3, window_size = 0.2,
               canny=True, fix_strategy = obtain_mean_mov_squared,
               max_mov=20, get_video=True):
     inversezoom = 1/nzoom 
@@ -266,18 +433,18 @@ def fix_video(videopath, nzoom = 0.3, window_size = 0.25,
     
     ret, img_next = cap.read()
     
-    pbar = tqdm(desc="Matrices calc", total=frame_count)
+    # pbar = tqdm(desc="Matrices calc", total=frame_count)
     accx = 0
     accy = 0
     i=0
     while cap.isOpened() and ret:
         i+=1
-        pbar.update()
+        # pbar.update()
         img_next_p = img_next[y1:y2, x1:x2, 0]
         img_next_z = cv2.resize(img_next_p, None, fx=nzoom, fy=nzoom) 
 
-        movx, movy = fix_strategy(img_prev_z, img_next_z, canny=canny)
-
+        movx, movy = fix_strategy(img_prev_z, img_next_z,window_size = window_size, canny=canny)
+        print("MOVX:", movx, "MOVY:", movy)
         accx = accx if max_mov is not None and accx >= max_mov else accx+movx
         accy = accy if max_mov is not None and accy >= max_mov else accy+movy
 
@@ -301,9 +468,11 @@ def fix_video(videopath, nzoom = 0.3, window_size = 0.25,
     if(out_cap is not None): 
         out_cap.release()
     
-def view_dense(videopath, nzoom = 0.3, window_size = 0.25,
-              canny=True, dense_strategy = obtain_dense_mov,
-              area_search = 0.0,
+def view_dense(videopath, nzoom = 0.2, 
+               window_size = 0.25,
+              window_padding = 0.0,
+              canny=True, 
+              dense_strategy = obtain_dense_mov,
               max_mov=20, get_video=True):
     inversezoom = 1/nzoom 
    
@@ -341,7 +510,7 @@ def view_dense(videopath, nzoom = 0.3, window_size = 0.25,
 
         flow = dense_strategy(img_next_p, img_next_p, 
                               window_size=window_size,
-                              area_search = area_search, 
+                              window_padding = window_padding, 
                               canny=canny)
         flow *= flow*inversezoom
 
@@ -367,5 +536,5 @@ def view_dense(videopath, nzoom = 0.3, window_size = 0.25,
 
 if __name__ == "__main__":
     fpath = "/home/dazmer/Videos/non_stabilized5.mp4"
-    # fix_video(fpath, max_mov=None)
-    view_dense(fpath, nzoom=1, window_size=0.021, area_search=0, canny=True)
+    fix_video(fpath, max_mov=None)
+    # view_dense(fpath, nzoom=1, window_size=0.021, window_padding=0, canny=True)

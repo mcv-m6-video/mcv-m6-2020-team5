@@ -15,18 +15,23 @@ res_vals = {}
 wsz_l = []
 asz_l = []
 ssz_l = []
-with open('registering_uncompleted_canny.csv', newline='') as csvfile:
+with open('registering_semifull.csv', newline='',encoding="utf8") as csvfile:
     spamreader = csv.reader(csvfile, delimiter=' ', quotechar='|')
     for row in spamreader:
-        ssz, wsz, asz, msen, pepn, time = row[0].split(",")
+        _, _,ssz,wsz, asz,msen, pepn,_,_,_ = row[0].split(",")
         # if msen == "null":
-        wsz_l.append(wsz)
-        asz_l.append(asz)
-        ssz_l.append(ssz)
+        ssz, wsz, asz= ssz, int(wsz), int(asz)
+        if(msen != "null"):
+            msen, pepn = float(msen), float(pepn)
+            wsz_l.append(wsz)
+            asz_l.append(asz)
+            ssz_l.append(ssz)
+        else: 
+            continue
         if wsz not in res_vals: res_vals[wsz] = {}
         if asz not in res_vals[wsz]: res_vals[wsz][asz] = {}
         if(msen != "null"):
-            res_vals[wsz][asz][ssz] = float(pepn)
+            res_vals[wsz][asz][ssz] = float(msen)
         else:
             res_vals[wsz][asz][ssz] = np.nan
     wsz_labels = np.unique(wsz_l)
@@ -45,10 +50,15 @@ with open('registering_uncompleted_canny.csv', newline='') as csvfile:
                             res_grid[i][j] = res_vals[lab_wsz][lab_asz][lab_ssz]
                         # else:
                             # res_grid[i][j] = 
-        if(t==0):
-            surface = go.Surface(z=res_grid)
-        else:
-            surface = go.Surface(z=res_grid, showscale=False, opacity=0.9)
+
+        wsz_l_i = [int(w) for w in wsz_labels]
+        asz_l_i = [int(a) for a in asz_labels]
+        surface = go.Surface(z=res_grid.T, 
+                             x=wsz_l_i,
+                             y=asz_l_i,
+                             showscale=False, 
+                             opacity=0.9,
+                             name=f"Window reduction of {lab_ssz}")
         surfaces.append(surface)
         print(surface)
         fig = go.Figure()
@@ -59,6 +69,11 @@ with open('registering_uncompleted_canny.csv', newline='') as csvfile:
             autosize=False,
             margin=dict(t=0, b=0, l=0, r=0),
             template="plotly_white",
+            title=f"\n Window reduction of {lab_ssz}",
+            scene = dict(
+                    xaxis_title="Window size",
+                    yaxis_title="Search area padding size",
+                    zaxis_title="MSEN")
         )
 
         fig.update_scenes(
@@ -68,28 +83,6 @@ with open('registering_uncompleted_canny.csv', newline='') as csvfile:
         
         fig.update_layout(
             updatemenus=[
-                dict(
-                    type = "buttons",
-                    direction = "left",
-                    buttons=list([
-                        dict(
-                            args=["type", "surface"],
-                            label="3D Surface",
-                            method="restyle"
-                        ),
-                        dict(
-                            args=["type", "heatmap"],
-                            label="Heatmap",
-                            method="restyle"
-                        )
-                    ]),
-                    pad={"r": 10, "t": 10},
-                    showactive=True,
-                    x=0.11,
-                    xanchor="left",
-                    y=1.1,
-                    yanchor="top"
-                ),
                 dict(
                     type = "buttons",
                     direction = "left",
