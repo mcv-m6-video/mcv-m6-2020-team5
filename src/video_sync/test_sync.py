@@ -27,17 +27,17 @@ def main():
     video_offset_list = np.array(get_starting_video_offsets("../datasets/AIC20_track3_MTMC/AIC20_track3/cam_timestamp/S01.txt"))
     
     minval = np.max(video_offset_list[1:])
-    # video_offset_list = video_offset_list - minval
-    video_offset_list[0] = 4000
+    video_offset_list = minval - video_offset_list
     
     video_list = []
     for path,offset in zip(video_path_list,video_offset_list):
-        video_list.append(dataset_video(path,offset))
+        video_list.append(dataset_video(path,offset_ms=offset))
     
     
-
+    frame_idx = 0
     while(all([vid.video_capture.isOpened() for vid in video_list])):
-        
+        print(frame_idx)
+        frame_idx += 1
         frames = []
         images_correct = True
         for vid in video_list:
@@ -48,7 +48,7 @@ def main():
         for i,frame in enumerate(frames):
             frame = cv2.resize(frame,(480,270))
             cv2.imshow(str(i),frame)
-        cv2.waitKey()
+        cv2.waitKey(100) 
 
     
 
