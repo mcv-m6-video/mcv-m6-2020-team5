@@ -28,14 +28,15 @@ def main():
     
     minval = np.max(video_offset_list[1:])
     video_offset_list = minval - video_offset_list
+    video_offset_list[:] = 80000
     
     video_list = []
     for path,offset in zip(video_path_list,video_offset_list):
         video_list.append(dataset_video(path,offset_ms=offset))
     
-    
+    images_correct = True
     frame_idx = 0
-    while(all([vid.video_capture.isOpened() for vid in video_list])):
+    while(all([vid.video_capture.isOpened() for vid in video_list]) and images_correct):
         print(frame_idx)
         frame_idx += 1
         frames = []
@@ -45,10 +46,11 @@ def main():
             frames.append(frame)
             images_correct *= ret
         
-        for i,frame in enumerate(frames):
-            frame = cv2.resize(frame,(480,270))
-            cv2.imshow(str(i),frame)
-        cv2.waitKey(100) 
+        if(images_correct):
+            for i,frame in enumerate(frames):
+                frame = cv2.resize(frame,(480,270))
+                cv2.imshow(str(i),frame)
+            cv2.waitKey(100) 
 
     
 
