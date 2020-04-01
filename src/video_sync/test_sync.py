@@ -18,17 +18,16 @@ def get_starting_video_offsets(filename):
 def main():
     
     video_path_list = []
-    video_path_list.append("../datasets/AIC20_track3_MTMC/train/S01/c001/vdo.avi")
-    video_path_list.append("../datasets/AIC20_track3_MTMC/train/S01/c002/vdo.avi")
-    video_path_list.append("../datasets/AIC20_track3_MTMC/train/S01/c003/vdo.avi")
-    video_path_list.append("../datasets/AIC20_track3_MTMC/train/S01/c004/vdo.avi")
-    video_path_list.append("../datasets/AIC20_track3_MTMC/train/S01/c005/vdo.avi")
+    video_path_list.append("../datasets/AIC20_track3_MTMC/AIC20_track3/test/S02/c006/vdo.avi")
+    video_path_list.append("../datasets/AIC20_track3_MTMC/AIC20_track3/test/S02/c007/vdo.avi")
+    video_path_list.append("../datasets/AIC20_track3_MTMC/AIC20_track3/test/S02/c008/vdo.avi")
+    video_path_list.append("../datasets/AIC20_track3_MTMC/AIC20_track3/test/S02/c009/vdo.avi")
     
-    video_offset_list = np.array(get_starting_video_offsets("../datasets/AIC20_track3_MTMC/cam_timestamp/S01.txt"))
+    video_offset_list = np.array(get_starting_video_offsets("../datasets/AIC20_track3_MTMC/AIC20_track3/cam_timestamp/S03.txt"))
     
+    video_offset_list = video_offset_list[:len(video_path_list)]
     minval = np.max(video_offset_list[1:])
     video_offset_list = minval - video_offset_list
-    video_offset_list[:] = 80000
     
     video_list = []
     for path,offset in zip(video_path_list,video_offset_list):
