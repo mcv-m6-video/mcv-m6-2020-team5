@@ -8,10 +8,12 @@ import cv2
 import numpy as np
 
 
-def print_rect(frame, rect, color):
+def print_rect(frame, rect, color, dt_id):
     pt1 = (int(rect[0]), int(rect[1]))
     pt2 = (int(rect[2]), int(rect[3]))
     cv2.rectangle(frame, pt1, pt2, color, thickness=2)
+    if dt_id is not None:
+        cv2.putText(frame, str(dt_id), (pt1[0], pt1[1]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
 
 def print_mask_overlap(frame, mask, alpha, color):
     binary = cv2.bitwise_and(mask,mask).astype(bool)
@@ -32,7 +34,7 @@ def print_func(frame, gt_rects, dt_rects,o_dt_rects, bgseg, bgseg_o, config, tra
         for gtrect in gt_rects:
             if(config.bboxes.activate):
                 if(config.bboxes.gt):
-                        print_rect(frame, gtrect, config.bboxes.gt_color)
+                        print_rect(frame, gtrect, config.bboxes.gt_color, None)
     if(bgseg_o is not None and config.bgseg_o.activate):
             frame = print_mask_overlap(frame, bgseg_o, 
                                config.bgseg_o.alpha, 
@@ -43,12 +45,12 @@ def print_func(frame, gt_rects, dt_rects,o_dt_rects, bgseg, bgseg_o, config, tra
                                config.bgseg.color)
     for dtrect_o in o_dt_rects:
         if(config.bboxes.dt_o):
-            print_rect(frame, dtrect_o, config.bboxes.dt_o_color)        
+            print_rect(frame, dtrect_o, config.bboxes.dt_o_color, None)        
 
 
     for dt_id, dtrect in dt_rects.items():
         if(config.bboxes.dt):
-            print_rect(frame, dtrect, config.bboxes.dt_color)
+            print_rect(frame, dtrect, config.bboxes.dt_color, dt_id)
         if(config.paths.activate):
             print_single_path(tracking.object_paths[dt_id], frame, config.paths.color)
 
