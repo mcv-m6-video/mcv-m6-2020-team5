@@ -35,7 +35,7 @@ tracker.Sort.iou_threshold=0.3
 # PRINT CONFIGURATION
 display = AttrDict()
 display.iou_plot = False
-display.frames   = False
+display.frames   = True
 
 pout = AttrDict()           #Print Out, to avoid re-declare "print" function
 pout.activate = True            # Whether activate or not prints
