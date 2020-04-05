@@ -1,6 +1,7 @@
 import motmetrics as mm 
 from scipy.spatial import distance as dist
 import numpy as np
+from sklearn.metrics.pairwise import pairwise_distances
 
 def get_centroid(rect):
     x1, y1, x2, y2 = rect
@@ -20,11 +21,11 @@ class mot_metrics(object):
             x1, y1, x2, y2, rect_id, _ = rect
             gt_centr.append( get_centroid([x1, y1, x2, y2]))
             gt_ids.append(rect_id)
-            
+
         pred_centr = [c[-1] for c in new_track.values()]
         pred_id = [c for c in new_track]
         if( len(pred_centr) > 0 and len(gt_centr) > 0 ):
-            distances = mm.distances.norm2squared_matrix(gt_centr, pred_centr, max_d2=10.)
+            distances = pairwise_distances(pred_centr, gt_centr, metric='euclidean')
             self.acc.update(gt_ids,pred_id, distances.tolist())
         else:
             self.acc.update(gt_ids,pred_id, [[]])

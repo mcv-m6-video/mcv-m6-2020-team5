@@ -9,6 +9,8 @@ Created on Wed Oct 31 12:19:00 2018
 """
 import cv2
 import numpy as np
+import copy
+from metrics.mAP import IoU
 
 def sort_contours(cnts, method="left-to-right"):
 	# initialize the reverse flag and sort index
@@ -80,7 +82,6 @@ def bbfilters(rects,im, wf_high=0.95, hf_high=0.8, wf_low=0.02, hf_low=0.1,
             bad_bboxes.append((x1,y1,x2,y2))
         else:
             good_bboxes.append((x1,y1,x2,y2))
-
     return good_bboxes, bad_bboxes
     
 def bbfilters_filling(im, org=None, wf_high=0.95, hf_high=0.8, wf_low=0.02, hf_low=0.1, 
@@ -145,3 +146,26 @@ def bbfilters_filling(im, org=None, wf_high=0.95, hf_high=0.8, wf_low=0.02, hf_l
 #    if(reverse):
 #        image = max_val-image
     return image, new_bb_list
+
+def bbfilters_remove_static(rects, rects_last, idx):
+    if idx > 5:
+        dt_rects_without_static = copy.deepcopy(rects)
+        num_boxes = np.arange(len(rects_last))
+        for idx in num_boxes:
+            box = rects_last[idx][0:4]
+            # Find boxes where IoU is 1 between last frame and current frame
+            IoU_list = [IoU(box, dt_rects_without_static[k]) for k in range(len(dt_rects_without_static))]
+            IoU_array = np.array(IoU_list)
+            idx_max =  np.where( IoU_array > 0.5 )
+            if len(idx_max[0]) != 0:
+                static_boxes_removed = 0
+                for static_box in idx_max[0]:
+                    static_box = static_box - static_boxes_removed
+                    del dt_rects_without_static[static_box]
+                    static_boxes_removed +=1
+
+        rects = copy.deepcopy(dt_rects_without_static)  
+    else:
+        rects_last = copy.deepcopy(rects)
+    
+    return rects, rects_last

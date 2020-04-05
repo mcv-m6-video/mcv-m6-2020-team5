@@ -241,7 +241,10 @@ def get_dicts(N_frames, method, gt_frames):
             for coord in range(len(boxes)):
                 bbox = [float(xy) for xy in boxes[coord][0:4]]
                 label = boxes[coord][5]
-                cat_id = label2id[label]
+                if label == "car":
+                    cat_id = 0
+                if label == "bike":
+                    cat_id = 1
                 obj = {
                     "bbox": bbox,
                     "bbox_mode": BoxMode.XYXY_ABS,

@@ -22,11 +22,14 @@ def frame_AP(n_gt, f_det_bb, frame_gt_bb):
     precision = []
     recall = []
     best_ious = []
+    if len(f_det_bb[0]) == 0:
+        best_ious = 0
     for f_det in f_det_bb[0]:
         ious = []
         correct = False
 
         if len(frame_gt_bb[0]) == 0:
+            best_ious = 1
             break
 
         for f_gt in frame_gt_bb[0]:
