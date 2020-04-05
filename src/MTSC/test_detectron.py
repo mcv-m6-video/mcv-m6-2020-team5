@@ -41,7 +41,7 @@ import MTSC.detectron_detect_multicameras as dt
 # IMPORTANT: Change SEQUENCE and CAMERA according to the ones you want to test
 SOURCE = "../datasets/AIC20_track3_MTMC/test/"
 SEQUENCE = 3
-CAMERA = 11
+CAMERA = 12
 SRC = SOURCE + 'S' + f"{SEQUENCE:02d}" + '/c' + f"{CAMERA:03d}"
 NUMBER_FRAMES = "../datasets/AIC20_track3_MTMC/cam_framenum/S" + f"{SEQUENCE:02d}" + '.txt'
 

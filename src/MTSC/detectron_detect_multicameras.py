@@ -209,19 +209,20 @@ def get_dicts(N_frames):
         for camera_dir in camera_dirs:
             print(camera_dir)
             gt_frames = read_gt(camera_dir)   
-            output_dir_train_camera = os.path.join(camera_dir,output_dir_train)   
-            if not os.path.exists(output_dir_train_camera):  
-                os.mkdir(output_dir_train_camera)
+            output_dir_train_camera = os.path.join(camera_dir,output_dir_train)
+            print(output_dir_train_camera)   
+            # if not os.path.exists(output_dir_train_camera):  
+            #     os.mkdir(output_dir_train_camera)
                     
-                filename = os.path.join(camera_dir, "vdo.avi")
-                vidcap = cv2.VideoCapture(filename)
-                success,image = vidcap.read()
-                count = 0
+            #     filename = os.path.join(camera_dir, "vdo.avi")
+            #     vidcap = cv2.VideoCapture(filename)
+            #     success,image = vidcap.read()
+            #     count = 0
                 
-                while success:
-                    cv2.imwrite(output_dir_train_camera + "frame_%d.jpg" % count, image)     # save frame as JPEG file      
-                    success,image = vidcap.read()
-                    count += 1
+            #     while success:
+            #         cv2.imwrite(output_dir_train_camera + "frame_%d.jpg" % count, image)     # save frame as JPEG file      
+            #         success,image = vidcap.read()
+            #         count += 1
                 
             
             keys = []
@@ -271,8 +272,8 @@ def get_dicts(N_frames):
                         dataset_dicts.append(record)
                         
                 dataset_train += dataset_dicts
-                print(len(dataset_dicts))
-                print(len(dataset_train))
+                # print(len(dataset_dicts))
+                # print(len(dataset_train))
 
             else:
                 pkl_file_train = open(train_dir, 'rb')
@@ -298,18 +299,18 @@ def get_dicts(N_frames):
             print(camera_dir)
             gt_frames = read_gt(camera_dir)   
             output_dir_test_camera = os.path.join(camera_dir,output_dir_test)   
-            if not os.path.exists(output_dir_test_camera): 
-                os.mkdir(output_dir_test_camera)
+            # if not os.path.exists(output_dir_test_camera): 
+            #     os.mkdir(output_dir_test_camera)
  
-                filename = os.path.join(camera_dir, "vdo.avi")
-                vidcap = cv2.VideoCapture(filename)
-                success,image = vidcap.read()
-                count = 0
+            #     filename = os.path.join(camera_dir, "vdo.avi")
+            #     vidcap = cv2.VideoCapture(filename)
+            #     success,image = vidcap.read()
+            #     count = 0
                 
-                while success:
-                    cv2.imwrite(output_dir_test_camera + "frame_%d.jpg" % count, image)     # save frame as JPEG file      
-                    success,image = vidcap.read()
-                    count += 1
+            #     while success:
+            #         cv2.imwrite(output_dir_test_camera + "frame_%d.jpg" % count, image)     # save frame as JPEG file      
+            #         success,image = vidcap.read()
+            #         count += 1
                         
             keys = []
                 
@@ -356,8 +357,8 @@ def get_dicts(N_frames):
                         dataset_dicts.append(record)
 
                 dataset_val += dataset_dicts  
-                print(len(dataset_dicts))
-                print(len(dataset_val))
+                # print(len(dataset_dicts))
+                # print(len(dataset_val))
 
             else:
                 pkl_file_val = open(val_dir, 'rb')
