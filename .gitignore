@@ -6,6 +6,7 @@ models
 src/opflows/output/*
 *.pkl
 *.csv
+*.txt
 
 *.avi
 *.mp4

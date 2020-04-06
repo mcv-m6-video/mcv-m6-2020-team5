@@ -41,11 +41,11 @@ import MTSC.detectron_detect_multicameras as dt
 # IMPORTANT: Change SEQUENCE and CAMERA according to the ones you want to test
 SOURCE = "../datasets/AIC20_track3_MTMC/test/"
 SEQUENCE = 3
-CAMERA = 12
-SRC = SOURCE + 'S' + f"{SEQUENCE:02d}" + '/c' + f"{CAMERA:03d}"
+# CAMERA = 15
 NUMBER_FRAMES = "../datasets/AIC20_track3_MTMC/cam_framenum/S" + f"{SEQUENCE:02d}" + '.txt'
 
-def test_detectron(new_config):
+def test_detectron(new_config, CAMERA, REGISTERED):
+    SRC = SOURCE + 'S' + f"{SEQUENCE:02d}" + '/c' + f"{CAMERA:03d}"
     
     gconf = obtain_general_config(gconfig=new_config)
 
@@ -66,7 +66,7 @@ def test_detectron(new_config):
         keys.append(int(key))
     
     # detect_func, bgsg_module = obtain_detector(**gconf.detector, gt_frames=gt_frames)
-    dclass = dt.detectron_detector_multicameras()
+    dclass = dt.detectron_detector_multicameras(net=gconf.detector.detectron.net, reg=REGISTERED)
     detect_func = dclass.predict
     bgsg_module = None
 
@@ -232,8 +232,16 @@ def test_detectron(new_config):
     print("mAP: ", mAP)
     print("mIoU: ", mIoU)
     
-    print(tracking_metrics.get_metrics())
+    idf1, idp, idr = tracking_metrics.get_metrics()
+    print("idf1: ", idf1)
     
+    camera_output = 'camera_' + str(CAMERA) + '.txt'
+    
+    with open (camera_output, 'w') as out_file:
+        out_file.write("mAP: " + str(mAP) + "\n")
+        out_file.write("mIoU: " + str(mIoU) + "\n")
+        out_file.write("idf1: " + str(idf1) + "\n")
+        
     cap.release()
     if(gconf.video.save_video):
         out_cap.release()

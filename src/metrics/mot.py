@@ -34,4 +34,4 @@ class mot_metrics(object):
     def get_metrics(self):
         mh = mm.metrics.create()
         summary = mh.compute(self.acc, metrics=["num_frames","idf1","idp","idr"], name="acc")
-        return summary
+        return summary['idf1']['acc'], summary['idp']['acc'], summary['idr']['acc']

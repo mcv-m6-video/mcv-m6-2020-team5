@@ -35,7 +35,7 @@ tracker.Sort.iou_threshold=0.3
 # PRINT CONFIGURATION
 display = AttrDict()
 display.iou_plot = False
-display.frames   = True
+display.frames   = False
 
 pout = AttrDict()           #Print Out, to avoid re-declare "print" function
 pout.activate = True            # Whether activate or not prints
@@ -80,7 +80,7 @@ detector.backgrounds.ours.single_channel = "GRAY"
 detector.detectron = AttrDict()
 detector.detectron.train_frames = 2140
 detector.detectron.weights_path = WEIGHTS+"/detectron.weights"
-detector.detectron.net = 'faster_rcnn' # Possible neta: retinanet, faster_rcnn
+detector.detectron.net = 'retinanet' # Possible neta: retinanet, faster_rcnn
 detector.detectron.training = True
 detector.detectron.train_method = 'random25' # Possible methods (so far): random25 (25% random), initial, random50 (50% random)
 detector.detectron.objects = ["car"]

@@ -38,11 +38,12 @@ def string_sort(string_list):
     string_list.sort(key=natural_keys)
 
 class detectron_detector_multicameras(object):
-    def __init__(self,train_frames = 3000, weights_path=None, net="faster_rcnn", 
-                 training = 'True', objects=["bike","car"]):
+    def __init__(self,train_frames = 3000, weights_path=None, net=None, 
+                 training = 'True', objects=["bike","car"], reg=None):
         self._n_of_trainings = 0
         self.thr_n_of_training = train_frames
         self.training = training
+        self.registered = reg
         self.tmp_train_frames = []
         self.weights_path = weights_path
         self.cfg = get_cfg()
@@ -93,9 +94,10 @@ class detectron_detector_multicameras(object):
         
     def generate_datasets(self, Ntraining):
         dataset_train, dataset_val = get_dicts(Ntraining)
-        for d in ['train', 'val']:
-            DatasetCatalog.register(d + '_set', lambda d=d: dataset_train if d == 'train' else dataset_val)
-            MetadataCatalog.get(d + '_set').set(thing_classes=['Person', 'None', 'Car'])
+        if not self.registered:
+            for d in ['train', 'val']:
+                DatasetCatalog.register(d + '_set', lambda d=d: dataset_train if d == 'train' else dataset_val)
+                MetadataCatalog.get(d + '_set').set(thing_classes=['Person', 'None', 'Car'])
 
     def train(self, training_frames, network):
 
@@ -131,10 +133,10 @@ class detectron_detector_multicameras(object):
         self.cfg.SOLVER.MAX_ITER = 2000
         self.cfg.SOLVER.STEPS = (1000, 2000)
         self.cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1
+        self.cfg.MODEL.DEVICE='cuda' 
         
         if not os.path.isfile(os.path.join(self.cfg.OUTPUT_DIR, 'model_final.pth')):
         
-
             os.makedirs(self.cfg.OUTPUT_DIR, exist_ok=True)
             
             trainer = DefaultTrainer(self.cfg)
