@@ -49,7 +49,7 @@ def dummy_feature_predict(frame_in,bb, model):
     model.eval()
     
     if use_gpu:
-        cropped_frame.cuda()
+        cropped_frame.torch.cuda.is_available()
     
     outputs,features = model(cropped_frame) #Revisar format que li hem d'entrar
     
