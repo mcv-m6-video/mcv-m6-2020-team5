@@ -1,8 +1,12 @@
 import cv2
+import torch
+from torch.nn import functional as F
 import numpy as np
 from gt_from_txt import read_gt
 import os
 from tqdm import tqdm
+import torchreid
+from torchreid.utils import load_pretrained_weights
 
 # classifies the dictionary by track instead of by frames
 def regenerate_tracks(camera_dict):
@@ -45,10 +49,28 @@ def dummy_feature_predict(frame_in,bb):
     # cv2.imshow("test",cropped_frame)
     # cv2.waitKey(1)
     
-    #do some predict features in hereeee
-
+    use_gpu = torch.cuda.is_available()
+    
+    model = torchreid.models.build_model(
+        name='resnet50',
+        num_classes=500,#Asignar a prueba error, de momento
+        loss='triplet',
+        pretrained=True,
+        use_gpu= use_gpu
+        )
+    
+    dir_to_weights = 'home/sergi/deep-person-reid/log/resnet50-ai2019/7/model.pth' #Añadir la direccion als weights
+    load_pretrained_weights(model, dir_to_weights)
+    
+    model.eval()
+    
+    if use_gpu:
+        cropped_frame.cuda()
+    
+    outputs,features = model(cropped_frame) #Revisar format que li hem d'entrar
+    
     #return track_id and feature vector
-    return []
+    return outputs, features
 
 
 def generate_features(all_cam_dict, in_path, sequence_num, camera_list):
@@ -88,11 +110,19 @@ def generate_features(all_cam_dict, in_path, sequence_num, camera_list):
             
 
 if __name__ == "__main__":
-    in_path = "../datasets/AIC20_track3_MTMC/test/"
+    in_path = "./AIC20_track3_MTMC/test/"
     sequence = 3
     cameras = [10, 11, 12, 13, 14, 15]
+    fc_normalize = False
     
     all_cam_dict = generate_track_for_all_cams(in_path,sequence,cameras)
-    generate_features(all_cam_dict,in_path,sequence,cameras)
+    feature_accumulated = generate_features(all_cam_dict,in_path,sequence,cameras)
+    
+    if fc_normalize:
+        feature_accumulated_norm = F.normalize(feature_accumulated, p=2, dim=1)
+    
+    
+    
+    
     print()
     
