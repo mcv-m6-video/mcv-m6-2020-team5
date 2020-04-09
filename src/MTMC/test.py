@@ -45,20 +45,6 @@ def generate_track_for_all_cams(in_path, sequence_num, camera_list):
         
     return all_cam_dict
 
-def dummy_feature_predict(frame_in):
-    
-    
-    
-    model.eval()
-    
-    if use_gpu:
-        cropped_bbox.cuda()
-    
-    outputs, features = model(cropped_bbox) #Revisar format que li hem d'entrar
-    
-    #return track_id and feature vector
-    return features
-
 
 def generate_features(all_cam_dict, in_path, sequence_num, camera_list,
                       save_path = "./out/cams", feature_func=dummy_feature_predict):
