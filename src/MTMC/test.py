@@ -47,7 +47,7 @@ def generate_track_for_all_cams(in_path, sequence_num, camera_list):
 
 
 def generate_features(all_cam_dict, in_path, sequence_num, camera_list,
-                      save_path = "./out/cams", feature_func=dummy_feature_predict):
+                      save_path = "./out/cams", feature_func=None):
     
     if not os.path.exists(save_path):
         os.makedirs(save_paths)
