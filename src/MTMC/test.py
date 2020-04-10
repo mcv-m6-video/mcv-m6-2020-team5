@@ -111,7 +111,7 @@ def generate_features(all_cam_dict, in_path, sequence_num, camera_list,
 
 def inside_dims(idx, mn, mx):
     return mn < idx <= mx    
-def relate_tracks(dists, p1, p2):
+def relate_tracks(dists, p1, p2, win_thrs=0.3):
     dists.argmin(axis=1)
     
     lims_cam2 = {}
@@ -121,19 +121,50 @@ def relate_tracks(dists, p1, p2):
     voting[np.arange(0, dists.shape[0]),dists.argmin(axis=1)]=1
     
     trk_v_res = np.zeros((len(p1.keys()),len(p2.keys())))
+    trk_v_size = np.zeros((len(p1.keys()),len(p2.keys())))
     row_min = 0
     for i, k in enumerate(p1.keys()):
         row_mat = voting[row_min:row_min+len(p1[k]), :]
         col_min = 0
         for j, t in enumerate(p2.keys()):
             trk_v_res[i, j] = np.sum(row_mat[:,col_min:col_min+len(p2[t])])
+            trk_v_size[i, j] = len(p1[k])
             col_min += len(p2[t])
         row_min += len(p1[k])
-    return trk_v_res
+        
+    winner_idx = np.argmax(trk_v_res,axis=1)
+    winner_n_votes = np.max(trk_v_res,axis=1)
+    win_percent = winner_n_votes/trk_v_size[:,0]
+    
+    translate_dict_p1 = {}
+    translate_dict_p2 = {}
+    current_id = 0
+    for i,val in enumerate(winner_idx):
+        if(win_percent[i] > win_thrs):
             
+            translate_dict_p1[list(p1.keys())[i]] = current_id
+            translate_dict_p2[list(p2.keys())[val]] = current_id
+            current_id += 1
+        else:
+            translate_dict_p1[list(p1.keys())[i]] = current_id
+            current_id += 1
+    
+    for k in p2.keys():
+        if(k not in translate_dict_p2):
+            translate_dict_p2[k] = current_id
+            current_id += 1
+        
+    return translate_dict_p1,translate_dict_p2
+
+def reid_from_dict(trans_dict,p1):
+    new_dict = {}
+    for k in p1.keys():
+        new_k = trans_dict[k]
+        new_dict[new_k] = p1[k]
+    return new_dict
     
 if __name__ == "__main__":
-    in_path = "../datasets/AIC20_track3_MTMC/test/"
+    in_path = "../../datasets/AIC20_track3_MTMC/test/"
     out_path = "./out/cams"
     sequence = 3
     cameras = [10, 11, 12, 13, 14, 15]
@@ -170,7 +201,9 @@ if __name__ == "__main__":
         p1 = pickle.load(open(cam_pickles[10], "rb"))
         p2 = pickle.load(open(cam_pickles[i], "rb"))
         dists = relation_cams[10][i]
-        trk_v_res = relate_tracks(dists, p1, p2)
+        translate_dict_p1,translate_dict_p2 = relate_tracks(dists, p1, p2)
+        new_p1 = reid_from_dict(translate_dict_p1,p1)
+        new_p2 = reid_from_dict(translate_dict_p2,p2)
     
         res = display.display_min(dists)
         display.print_grid(res, p1, p2)
