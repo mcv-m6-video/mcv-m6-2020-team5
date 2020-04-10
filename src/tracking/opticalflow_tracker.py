@@ -281,7 +281,7 @@ class MultiTracker():
             self.save_status()
         return self.objects
     
-    def predict_next_boxes(self, rects, flow, movement_type="all_frames"):
+    def predict_next_boxes(self, rects, flow, movement_type="mean_flow"):
         
         new_boxes = []
         
