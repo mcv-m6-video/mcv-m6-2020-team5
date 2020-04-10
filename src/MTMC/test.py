@@ -11,6 +11,7 @@ import os
 import pickle
 from model import Model
 from metrics import calculate_matrices
+from collections import OrderedDict
 # classifies the dictionary by track instead of by frames
 def regenerate_tracks(camera_dict):
     track_dict = {}
@@ -47,7 +48,8 @@ def generate_track_for_all_cams(in_path, sequence_num, camera_list):
 
 
 def generate_features(all_cam_dict, in_path, sequence_num, camera_list,
-                      save_path = "./out/cams", feature_func=None):
+                      save_path = "./out/cams", feature_func=None,
+                      return_images = False):
     
     if not os.path.exists(save_path):
         os.makedirs(save_paths)
@@ -55,7 +57,9 @@ def generate_features(all_cam_dict, in_path, sequence_num, camera_list,
     in_path = os.path.join(in_path,seq_name)
     cam_pickles = {}
     for cam in tqdm(camera_list):
-        feature_accumulator = {}
+        feature_accumulator = OrderedDict()
+        if(return_images):
+            img_accumulator = OrderedDict()
         cam_name = "c{:03d}".format(cam)
         cam_path = os.path.join(in_path,cam_name)
         video_path = os.path.join(cam_path,"vdo.avi")
@@ -79,34 +83,68 @@ def generate_features(all_cam_dict, in_path, sequence_num, camera_list,
                     feature = feature_func(cropped_bbox)
                     if track_id not in feature_accumulator:
                         feature_accumulator[track_id] = []
+                        if(return_images):
+                            img_accumulator[track_id] = []
                     feature_accumulator[track_id].append(feature)
+                    if(return_images):
+                        img_accumulator[track_id].append(cropped_bbox)
                     # feature_accumulator.append((track_id,feature))
             i += 1
             pbar.update()
         pbar.close()
+        
         print(f"Saving features for cam {cam}")  
         ppath = os.path.join(save_path, f"{cam}.pkl")
         with open(ppath, "wb+") as f:
             pickle.dump(feature_accumulator, f)
         cam_pickles[cam] = ppath
+            
+        if(return_images):
+            print(f"Saving images for cam {cam}")  
+            ppath2 = os.path.join(save_path, f"{cam}_imgs.pkl")
+            with open(ppath2, "wb+") as f:
+                pickle.dump(feature_accumulator, f)
+            
+            img_pickles[cam] = ppath2
+            return cam_pickles, img_pickles
     return cam_pickles
-    
-    
 
+def inside_dims(idx, mn, mx):
+    return mn < idx <= mx    
+def relate_tracks(dists, p1, p2):
+    dists.argmin(axis=1)
+    
+    lims_cam2 = {}
+    lim_low = 0
 
+    voting = np.zeros_like(dists)
+    voting[np.arange(0, dists.shape[0]),dists.argmin(axis=1)]=1
+    
+    trk_v_res = np.zeros((len(p1.keys()),len(p2.keys())))
+    row_min = 0
+    for i, k in enumerate(p1.keys()):
+        row_mat = voting[row_min:row_min+len(p1[k]), :]
+        col_min = 0
+        for j, t in enumerate(p2.keys()):
+            trk_v_res[i, j] = np.sum(row_mat[:,col_min:col_min+len(p2[t])])
+            col_min += len(p2[t])
+        row_min += len(p1[k])
+    return trk_v_res
+            
+    
 if __name__ == "__main__":
     in_path = "../datasets/AIC20_track3_MTMC/test/"
     out_path = "./out/cams"
     sequence = 3
     cameras = [10, 11, 12, 13, 14, 15]
     fc_normalize = False
-    load_pickles = False
+    load_pickles = True
     
     all_cam_dict = generate_track_for_all_cams(in_path,sequence,cameras)
     
     use_gpu = torch.cuda.is_available()
 
-    dir_to_weights = '../weights/resnet50_triple_10.pth' #Añadir la direccion als weights
+    dir_to_weights = '../../weights/resnet50_triple_10.pth' #Añadir la direccion als weights
     model = Model(dir_to_weights)
     # load_pretrained_weights(model, dir_to_weights)
     ppath = os.path.join(out_path, f"cam_pickles.pkl")
@@ -117,17 +155,8 @@ if __name__ == "__main__":
         with open(ppath, "wb+") as f:
             pickle.dump(cam_pickles, f)
     else:
-        # with open(ppath, "rb") as f:
         cam_pickles = pickle.load(open(ppath, "rb"))
-        # cam_pickles = {10:os.path.join(out_path, f"10.pkl"),
-        #                11:os.path.join(out_path, f"11.pkl"),
-        #                12:os.path.join(out_path, f"12.pkl"),
-        #                13:os.path.join(out_path, f"13.pkl"),
-        #                14:os.path.join(out_path, f"14.pkl"),
-        #                15:os.path.join(out_path, f"15.pkl")}
-        # with open(ppath, "wb+") as f:
-        #     pickle.dump(cam_pickles, f)
-    
+
     
     relation_cams = calculate_matrices(cam_pickles)
 
@@ -138,8 +167,13 @@ if __name__ == "__main__":
     # a = "y"
     i = 11
     while  i < 16:
-        res = display.display_min(relation_cams[10][i])
-        display.print_grid(res, cam_pickles[10], cam_pickles[i])
+        p1 = pickle.load(open(cam_pickles[10], "rb"))
+        p2 = pickle.load(open(cam_pickles[i], "rb"))
+        dists = relation_cams[10][i]
+        trk_v_res = relate_tracks(dists, p1, p2)
+    
+        res = display.display_min(dists)
+        display.print_grid(res, p1, p2)
         # a = input("Continue? y/n")
         cv2.imshow("res", res)
         k = -1

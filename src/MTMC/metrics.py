@@ -9,6 +9,7 @@ from torchreid import metrics
 import pickle
 import numpy as np
 import torch
+import os
 
 def create_matrix(p1, p2, dist_metric="euclidean"):
     # f1 = []
@@ -35,6 +36,8 @@ def calculate_matrices(cam_pickles):
         relation_cams[cam1] = {}
         for cam2 in cam_pickles.keys():
             if(cam2 == cam1): continue
+            # path1 = os.path.normpath(cam_pickles[cam1]) 
+            # path2 = os.path.normpath(cam_pickles[cam2]) 
             p1 = pickle.load(open(cam_pickles[cam1], "rb"))
             p2 = pickle.load(open(cam_pickles[cam2], "rb"))
         

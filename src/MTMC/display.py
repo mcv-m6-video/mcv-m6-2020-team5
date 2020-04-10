@@ -42,9 +42,10 @@ def display_heatmap(dist_mat):
     # cv2.imshow("res", out); cv2.waitKey(1000)
     return out
 
-def print_grid(img, pickle1, pickle2, color=(0, 0, 255)):
-    p1 = pickle.load(open(pickle1, "rb"))
-    p2 = pickle.load(open(pickle2, "rb"))
+def print_grid(img, p1, p2, color=(0, 0, 255)):
+    # path1 = os.path.normpath(pickle1) 
+    # path2 = os.path.normpath(pickle2) 
+
     
     counter = 0
     for k in p1.keys():
@@ -59,4 +60,15 @@ def print_grid(img, pickle1, pickle2, color=(0, 0, 255)):
         # except:
         #     print("out of bounds!")
         #     print(counter,"-",len(p2[k])-1)
-    
+
+displaying = False
+sel_x, sel_y = -1, -1
+def show_pair_imgs(event,x,y,flags,param):
+    if event == cv.EVENT_LBUTTONDOWN:
+        displaying = True
+        ix,iy = x,y
+    elif event == cv.EVENT_MOUSEMOVE:
+        if displaying == True:
+            pass
+    elif event == cv.EVENT_LBUTTONUP:
+        drawing = False
