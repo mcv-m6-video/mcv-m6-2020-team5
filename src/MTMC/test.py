@@ -12,6 +12,8 @@ import pickle
 from model import Model
 from metrics import calculate_matrices
 from collections import OrderedDict
+from mot import mot_metrics
+
 # classifies the dictionary by track instead of by frames
 def regenerate_tracks(camera_dict):
     track_dict = {}
@@ -31,7 +33,7 @@ def regenerate_tracks(camera_dict):
              
     return track_dict
 
-def generate_track_for_all_cams(in_path, sequence_num, camera_list):
+def generate_track_for_all_cams(in_path, sequence_num, camera_list, method):
     
     all_cam_dict = {}
     seq_name = "S{:02d}".format(sequence_num)
@@ -42,7 +44,10 @@ def generate_track_for_all_cams(in_path, sequence_num, camera_list):
     
         # temp_dict = read_gt(annot_path)
         # all_cam_dict[cam] = regenerate_tracks(temp_dict)
-        all_cam_dict[cam] = read_det(annot_path)
+        if method == 'det':
+            all_cam_dict[cam] = read_det(annot_path)
+        elif method == 'gt':
+            all_cam_dict[cam] = read_gt(annot_path)
         
     return all_cam_dict
 
@@ -156,26 +161,51 @@ def relate_tracks(dists, p1, p2, win_thrs=0.3):
         
     return translate_dict_p1,translate_dict_p2
 
-def reid_from_dict(trans_dict,p1):
+# def reid_from_dict(trans_dict,p1):
+#     print(p1)
+#     new_dict = {}
+#     for k in p1.keys():
+#         new_k = trans_dict[k]
+#         new_dict[new_k] = p1[k]
+#     return new_dict
+
+def reid_from_dict(trans_dict,cam_dict):
     new_dict = {}
-    for k in p1.keys():
-        new_k = trans_dict[k]
-        new_dict[new_k] = p1[k]
+    for frame in cam_dict.keys():
+        frame_boxes = []
+        boxes = cam_dict[frame]
+        for box in boxes:
+            new_k = trans_dict[box[4]]
+            frame_boxes.append((box[0],box[1],box[2],box[3],new_k,box[5]))
+            
+        new_dict[frame] = frame_boxes
     return new_dict
+
+def read_number_frames(path, camera):
+    with open (path, 'rt') as number_frames:
+        for line in number_frames:
+            if line.split(' ')[0] == "c" + f"{camera:03d}":   
+                total_frames = int(line.split(' ')[1])  
+    return total_frames  
     
 if __name__ == "__main__":
-    in_path = "../../datasets/AIC20_track3_MTMC/test/"
+    in_path = "../../../datasets/AIC20_track3_MTMC/test/"
     out_path = "./out/cams"
     sequence = 3
     cameras = [10, 11, 12, 13, 14, 15]
     fc_normalize = False
     load_pickles = True
+    number_frames = {}
     
-    all_cam_dict = generate_track_for_all_cams(in_path,sequence,cameras)
+    for cam in cameras:
+        number_frames[cam] = read_number_frames("../../../datasets/AIC20_track3_MTMC/cam_framenum/S" + f"{3:02d}" + '.txt', cam)
+    
+    all_cam_dict = generate_track_for_all_cams(in_path,sequence,cameras,'det')
+    gt_all_cam_dict = generate_track_for_all_cams(in_path,sequence,cameras,'gt')
     
     use_gpu = torch.cuda.is_available()
 
-    dir_to_weights = '../../weights/resnet50_triple_10.pth' #Añadir la direccion als weights
+    dir_to_weights = '../weights/resnet50_triple_10.pth' #Añadir la direccion als weights
     model = Model(dir_to_weights)
     # load_pretrained_weights(model, dir_to_weights)
     ppath = os.path.join(out_path, f"cam_pickles.pkl")
@@ -202,9 +232,37 @@ if __name__ == "__main__":
         p2 = pickle.load(open(cam_pickles[i], "rb"))
         dists = relation_cams[10][i]
         translate_dict_p1,translate_dict_p2 = relate_tracks(dists, p1, p2)
-        new_p1 = reid_from_dict(translate_dict_p1,p1)
-        new_p2 = reid_from_dict(translate_dict_p2,p2)
-    
+        
+        new_p1 = reid_from_dict(translate_dict_p1,all_cam_dict[10])
+        new_p2 = reid_from_dict(translate_dict_p2,all_cam_dict[i])
+        
+        tracking_metrics = mot_metrics()            
+
+        for frame in range(number_frames[10]):
+            if frame in new_p1:
+                dt_rects = new_p1[frame]
+            else:
+                dt_rects = []   
+            if frame in gt_all_cam_dict[10]:
+                gt_rects = gt_all_cam_dict[10][frame]  
+            else:
+                gt_rects = []          
+            tracking_metrics.update(dt_rects,gt_rects)
+            
+        for frame in range(number_frames[11]):
+            if frame in new_p2:
+                dt_rects = new_p2[frame]
+            else:
+                dt_rects = []   
+            if frame in gt_all_cam_dict[11]:
+                gt_rects = gt_all_cam_dict[11][frame]  
+            else:
+                gt_rects = []          
+            tracking_metrics.update(dt_rects,gt_rects)
+        
+        # tracking_metrics.update(new_p2,gt_all_cam_dict[i])
+        idf1, idp, idr = tracking_metrics.get_metrics()
+        print("idf1: ", idf1)
         res = display.display_min(dists)
         display.print_grid(res, p1, p2)
         # a = input("Continue? y/n")
