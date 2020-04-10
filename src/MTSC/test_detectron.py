@@ -30,6 +30,7 @@ from tqdm import tqdm
 from collections import OrderedDict
 import opflows.visualization as opt_view
 from MTSC.gt_from_txt import read_gt, read_det
+from MTSC.det_to_txt import write_det
 
 import pickle
 
@@ -156,7 +157,7 @@ def test_detectron(new_config, CAMERA, REGISTERED):
                     dt_rects = tracker.update(dt_rects,flow)
                 else:
                     dt_rects = tracker.update(dt_rects)
-                                
+                       
                 # Obtain GT
                 if i not in keys:
                     gt_rects = []
@@ -168,18 +169,24 @@ def test_detectron(new_config, CAMERA, REGISTERED):
 
                 if gt_rects or dt_rects:
                     compute_metric = True
-                if i > 5 and compute_metric:
+                if i > 10 and compute_metric:
                     dt_rects_dict[str(nval_img)] = list(dt_rects.values())
                     gt_rects_dict[str(nval_img)] = gt_rects
                     nval_img += 1
-                    
+    
                 # Include detections for tracking
-                if i > 5 and compute_metric:
-                    dt_track = OrderedDict()
-                    for dt_id, dtrect in dt_rects.items():
-                        dt_track.update({dt_id: tracker.object_paths[dt_id]})
+                # if i > 10 and compute_metric:
+                dt_track = OrderedDict()
+                save_det = False
+
+                for dt_id, dtrect in dt_rects.items():
+                    # print("id: ", dt_id)
+                    # print("rects: ", dtrect)
+                    dt_track.update({dt_id: tracker.object_paths[dt_id]})
+                    if save_det:
+                        write_det(dt_id, dtrect, i, SRC, gconf.detector.detectron.net)
                         
-                    tracking_metrics.update(dt_track,gt_rects)
+                tracking_metrics.update(dt_track,gt_rects)
                                        
                
                 bgseg = None if bgsg_module is None else bgsg_module.get_bgseg()
