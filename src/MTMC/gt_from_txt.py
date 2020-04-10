@@ -44,8 +44,8 @@ def read_gt(path):
     return obtain_data(src, True)
 
 def read_det(path):
-    src = path + '/det/det_mask_rcnn.txt'
-    return obtain_data(src, False)
+    src = path + '/det/det_faster_rcnn.txt'
+    return obtain_data(src, True)
 
 if __name__ == "__main__":
     dict_frame = read_gt(1, 1)

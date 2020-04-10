@@ -2,7 +2,7 @@ import cv2
 import torch
 from torch.nn import functional as F
 import numpy as np
-from gt_from_txt import read_gt
+from gt_from_txt import read_gt,read_det
 import os
 from tqdm import tqdm
 import torchreid
@@ -41,7 +41,7 @@ def generate_track_for_all_cams(in_path, sequence_num, camera_list):
     
         # temp_dict = read_gt(annot_path)
         # all_cam_dict[cam] = regenerate_tracks(temp_dict)
-        all_cam_dict[cam] = read_gt(annot_path)
+        all_cam_dict[cam] = read_det(annot_path)
         
     return all_cam_dict
 
@@ -100,13 +100,13 @@ if __name__ == "__main__":
     sequence = 3
     cameras = [10, 11, 12, 13, 14, 15]
     fc_normalize = False
-    load_pickles = True
+    load_pickles = False
     
     all_cam_dict = generate_track_for_all_cams(in_path,sequence,cameras)
     
     use_gpu = torch.cuda.is_available()
 
-    dir_to_weights = '../../weights/resnet50_triple_10.pth' #Añadir la direccion als weights
+    dir_to_weights = '../weights/resnet50_triple_10.pth' #Añadir la direccion als weights
     model = Model(dir_to_weights)
     # load_pretrained_weights(model, dir_to_weights)
     ppath = os.path.join(out_path, f"cam_pickles.pkl")
