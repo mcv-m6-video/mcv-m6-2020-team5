@@ -10,7 +10,7 @@ from torchreid.utils import load_pretrained_weights
 import os
 import pickle
 from model import Model
-from metrics import calculate_matrices
+from metrics import calculate_matrices, recalculate_matrices
 from collections import OrderedDict
 
 import glob
@@ -170,13 +170,12 @@ def relate_tracks(dists, p1, p2, win_thrs=0.3):
         
     return translate_dict_p1,translate_dict_p2
 
-# def reid_from_dict(trans_dict,p1):
-#     print(p1)
-#     new_dict = {}
-#     for k in p1.keys():
-#         new_k = trans_dict[k]
-#         new_dict[new_k] = p1[k]
-#     return new_dict
+def arrange_dict_by_id(trans_dict,p1):
+    new_dict = {}
+    for k in p1.keys():
+        new_k = trans_dict[k]
+        new_dict[new_k] = p1[k]
+    return new_dict
 
 def reid_from_dict(trans_dict,cam_dict):
     new_dict = {}
@@ -197,6 +196,27 @@ def read_number_frames(path, camera):
                 total_frames = int(line.split(' ')[1])  
     return total_frames  
 
+def merge_cameras_dict(dict1, dict2): 
+    ''' Merge dictionaries and keep values of common keys in list'''
+    # dict3 = {**dict1, **dict2}
+    # for key, value in dict3.items():
+    #     if key in dict1 and key in dict2:
+    #         dict3[key] = value.extend(dict1[key])
+            
+    dict3 = {}
+    
+    for key in dict1.keys():
+        if(key in dict2.keys()):
+            dict3[key] = dict1[key] + dict2[key]
+        else:
+            dict3[key] = dict1[key]
+    
+    for key in dict2.keys():
+        if(key not in dict3.keys()):
+            dict3[key] = dict2[key]
+ 
+    return dict3
+
 def evaluate_mot(mot_obj,gt_dict,pred_dict,num_frames):
     
     for frame in range(num_frames):
@@ -209,7 +229,7 @@ def evaluate_mot(mot_obj,gt_dict,pred_dict,num_frames):
         else:
             gt_rects = []          
         mot_obj.update(dt_rects,gt_rects)
-        
+    
     
 
     
@@ -271,6 +291,8 @@ if __name__ == "__main__":
     cv2.namedWindow("res")
     i = 11
     j = 10
+    cam_merge = {}
+
     print(cam_pickles)
     p1 = pickle.load(open(cam_pickles[j], "rb"))
     if(show_cars):
@@ -281,6 +303,10 @@ if __name__ == "__main__":
     while  i < 16:
         # print(cam_pickles)
         p2 = pickle.load(open(cam_pickles[i], "rb"))
+        if not cam_merge: pass
+        else: 
+            relation_cams = recalculate_matrices(cam_merge, j, p2, i)
+            p1 = cam_merge
         if(show_cars):
             pc2 = pickle.load(open(img_pickles[i], "rb"))
             c2 = []
@@ -289,16 +315,15 @@ if __name__ == "__main__":
 
         translate_dict_p1,translate_dict_p2 = relate_tracks(dists, p1, p2)
         
-        new_p1 = reid_from_dict(translate_dict_p1,all_cam_dict[j])
-        new_p2 = reid_from_dict(translate_dict_p2,all_cam_dict[i])
+        for j in range(10,i):
+            all_cam_dict[j] = reid_from_dict(translate_dict_p1,all_cam_dict[j])
+        all_cam_dict[i] = reid_from_dict(translate_dict_p2,all_cam_dict[i]) 
         
-        tracking_metrics = mot_metrics()
-        evaluate_mot(tracking_metrics,gt_all_cam_dict[j],new_p1,number_frames[j])
-        evaluate_mot(tracking_metrics,gt_all_cam_dict[i],new_p2,number_frames[i])
-        
-        # tracking_metrics.update(new_p2,gt_all_cam_dict[i])
-        idf1, idp, idr = tracking_metrics.get_metrics()
-        print("idf1: ", idf1)
+        id_p1 = arrange_dict_by_id(translate_dict_p1, p1)
+        id_p2 = arrange_dict_by_id(translate_dict_p2, p2)
+
+        cam_merge = merge_cameras_dict(id_p1, id_p2) 
+ 
         
         res = display.display_heatmap(dists)
         
@@ -330,7 +355,16 @@ if __name__ == "__main__":
             if(k == 99):
                 i+=1
                 pressed = True
+    tracking_metrics = mot_metrics()            
     
+    for cam_num in cameras:
+        evaluate_mot(tracking_metrics,gt_all_cam_dict[cam_num],all_cam_dict[cam_num],number_frames[cam_num])
+        idf1, idp, idr = tracking_metrics.get_metrics()
+        print("idf1: ", idf1)
+ 
+    # tracking_metrics.update(new_p2,gt_all_cam_dict[i])
+    idf1, idp, idr = tracking_metrics.get_metrics()
+    print("idf1: ", idf1)
     
     print()
     
