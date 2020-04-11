@@ -12,7 +12,9 @@ import pickle
 from model import Model
 from metrics import calculate_matrices
 from collections import OrderedDict
+
 import glob
+from mot import mot_metrics
 
 # classifies the dictionary by track instead of by frames
 def regenerate_tracks(camera_dict):
@@ -33,7 +35,7 @@ def regenerate_tracks(camera_dict):
              
     return track_dict
 
-def generate_track_for_all_cams(in_path, sequence_num, camera_list):
+def generate_track_for_all_cams(in_path, sequence_num, camera_list, method):
     
     all_cam_dict = {}
     seq_name = "S{:02d}".format(sequence_num)
@@ -44,7 +46,10 @@ def generate_track_for_all_cams(in_path, sequence_num, camera_list):
     
         # temp_dict = read_gt(annot_path)
         # all_cam_dict[cam] = regenerate_tracks(temp_dict)
-        all_cam_dict[cam] = read_det(annot_path)
+        if method == 'det':
+            all_cam_dict[cam] = read_det(annot_path)
+        elif method == 'gt':
+            all_cam_dict[cam] = read_gt(annot_path)
         
     return all_cam_dict
 
@@ -118,8 +123,9 @@ def generate_features(all_cam_dict, in_path, sequence_num, camera_list,
     return cam_pickles
 
 def inside_dims(idx, mn, mx):
-    return mn < idx <= mx    
-def relate_tracks(dists, p1, p2):
+    return mn < idx <= mx 
+   
+def relate_tracks(dists, p1, p2, win_thrs=0.3):
     dists.argmin(axis=1)
     
     lims_cam2 = {}
@@ -129,19 +135,86 @@ def relate_tracks(dists, p1, p2):
     voting[np.arange(0, dists.shape[0]),dists.argmin(axis=1)]=1
     
     trk_v_res = np.zeros((len(p1.keys()),len(p2.keys())))
+    trk_v_size = np.zeros((len(p1.keys()),len(p2.keys())))
     row_min = 0
     for i, k in enumerate(p1.keys()):
         row_mat = voting[row_min:row_min+len(p1[k]), :]
         col_min = 0
         for j, t in enumerate(p2.keys()):
             trk_v_res[i, j] = np.sum(row_mat[:,col_min:col_min+len(p2[t])])
+            trk_v_size[i, j] = len(p1[k])
             col_min += len(p2[t])
         row_min += len(p1[k])
-    return trk_v_res
+        
+    winner_idx = np.argmax(trk_v_res,axis=1)
+    winner_n_votes = np.max(trk_v_res,axis=1)
+    win_percent = winner_n_votes/trk_v_size[:,0]
+    
+    translate_dict_p1 = {}
+    translate_dict_p2 = {}
+    current_id = 0
+    for i,val in enumerate(winner_idx):
+        if(win_percent[i] > win_thrs):
             
+            translate_dict_p1[list(p1.keys())[i]] = current_id
+            translate_dict_p2[list(p2.keys())[val]] = current_id
+            current_id += 1
+        else:
+            translate_dict_p1[list(p1.keys())[i]] = current_id
+            current_id += 1
+    
+    for k in p2.keys():
+        if(k not in translate_dict_p2):
+            translate_dict_p2[k] = current_id
+            current_id += 1
+        
+    return translate_dict_p1,translate_dict_p2
+
+# def reid_from_dict(trans_dict,p1):
+#     print(p1)
+#     new_dict = {}
+#     for k in p1.keys():
+#         new_k = trans_dict[k]
+#         new_dict[new_k] = p1[k]
+#     return new_dict
+
+def reid_from_dict(trans_dict,cam_dict):
+    new_dict = {}
+    for frame in cam_dict.keys():
+        frame_boxes = []
+        boxes = cam_dict[frame]
+        for box in boxes:
+            new_k = trans_dict[box[4]]
+            frame_boxes.append((box[0],box[1],box[2],box[3],new_k,box[5]))
+            
+        new_dict[frame] = frame_boxes
+    return new_dict
+
+def read_number_frames(path, camera):
+    with open (path, 'rt') as number_frames:
+        for line in number_frames:
+            if line.split(' ')[0] == "c" + f"{camera:03d}":   
+                total_frames = int(line.split(' ')[1])  
+    return total_frames  
+
+def evaluate_mot(mot_obj,gt_dict,pred_dict,num_frames):
+    
+    for frame in range(num_frames):
+        if frame in pred_dict:
+            dt_rects = pred_dict[frame]
+        else:
+            dt_rects = []   
+        if frame in gt_dict:
+            gt_rects = gt_dict[frame]  
+        else:
+            gt_rects = []          
+        mot_obj.update(dt_rects,gt_rects)
+        
+    
+
     
 if __name__ == "__main__":
-    in_path = "../datasets/AIC20_track3_MTMC/test/"
+    in_path = "../../datasets/AIC20_track3_MTMC/test/"
     out_path = "./out/cams"
     sequence = 3
     cameras = [10, 11, 12, 13, 14, 15]
@@ -150,8 +223,13 @@ if __name__ == "__main__":
     load_pickles = True
     show_cars = True
     max_permitted_size = 150*150*3
+    number_frames = {}
     
-    all_cam_dict = generate_track_for_all_cams(in_path,sequence,cameras)
+    for cam in cameras:
+        number_frames[cam] = read_number_frames("../../datasets/AIC20_track3_MTMC/cam_framenum/S" + f"{3:02d}" + '.txt', cam)
+
+    all_cam_dict = generate_track_for_all_cams(in_path,sequence,cameras,'det')
+    gt_all_cam_dict = generate_track_for_all_cams(in_path,sequence,cameras,'gt')
     
     use_gpu = torch.cuda.is_available()
 
@@ -208,9 +286,22 @@ if __name__ == "__main__":
             c2 = []
             for k in pc2.keys(): c2.extend(pc2[k]) 
         dists = relation_cams[j][i]
-        trk_v_res = relate_tracks(dists, p1, p2)
-    
+
+        translate_dict_p1,translate_dict_p2 = relate_tracks(dists, p1, p2)
+        
+        new_p1 = reid_from_dict(translate_dict_p1,all_cam_dict[j])
+        new_p2 = reid_from_dict(translate_dict_p2,all_cam_dict[i])
+        
+        tracking_metrics = mot_metrics()
+        evaluate_mot(tracking_metrics,gt_all_cam_dict[j],new_p1,number_frames[j])
+        evaluate_mot(tracking_metrics,gt_all_cam_dict[i],new_p2,number_frames[i])
+        
+        # tracking_metrics.update(new_p2,gt_all_cam_dict[i])
+        idf1, idp, idr = tracking_metrics.get_metrics()
+        print("idf1: ", idf1)
+        
         res = display.display_heatmap(dists)
+        
         display.print_grid(res, p1, p2)
         # a = input("Continue? y/n")
         k = -1

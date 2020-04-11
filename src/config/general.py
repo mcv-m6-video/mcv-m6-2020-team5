@@ -20,7 +20,7 @@ video.start_save = 3000
 video.duration = 3      #duration in seconds
 
 tracker = AttrDict()
-tracker.ttype = "optical_flow_track"
+tracker.ttype = "overlap"
 tracker.Multi = AttrDict()
 tracker.Multi.maxDisappeared=4
 tracker.Multi.pix_tol=100
