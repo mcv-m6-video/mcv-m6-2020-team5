@@ -15,7 +15,7 @@ from collections import OrderedDict
 
 import glob
 from mot import mot_metrics
-
+from track_relation import generate_global_dict
 # classifies the dictionary by track instead of by frames
 def regenerate_tracks(camera_dict):
     track_dict = {}
@@ -124,51 +124,7 @@ def generate_features(all_cam_dict, in_path, sequence_num, camera_list,
 
 def inside_dims(idx, mn, mx):
     return mn < idx <= mx 
-   
-def relate_tracks(dists, p1, p2, win_thrs=0.3):
-    dists.argmin(axis=1)
-    
-    lims_cam2 = {}
-    lim_low = 0
 
-    voting = np.zeros_like(dists)
-    voting[np.arange(0, dists.shape[0]),dists.argmin(axis=1)]=1
-    
-    trk_v_res = np.zeros((len(p1.keys()),len(p2.keys())))
-    trk_v_size = np.zeros((len(p1.keys()),len(p2.keys())))
-    row_min = 0
-    for i, k in enumerate(p1.keys()):
-        row_mat = voting[row_min:row_min+len(p1[k]), :]
-        col_min = 0
-        for j, t in enumerate(p2.keys()):
-            trk_v_res[i, j] = np.sum(row_mat[:,col_min:col_min+len(p2[t])])
-            trk_v_size[i, j] = len(p1[k])
-            col_min += len(p2[t])
-        row_min += len(p1[k])
-        
-    winner_idx = np.argmax(trk_v_res,axis=1)
-    winner_n_votes = np.max(trk_v_res,axis=1)
-    win_percent = winner_n_votes/trk_v_size[:,0]
-    
-    translate_dict_p1 = {}
-    translate_dict_p2 = {}
-    current_id = 0
-    for i,val in enumerate(winner_idx):
-        if(win_percent[i] > win_thrs):
-            
-            translate_dict_p1[list(p1.keys())[i]] = current_id
-            translate_dict_p2[list(p2.keys())[val]] = current_id
-            current_id += 1
-        else:
-            translate_dict_p1[list(p1.keys())[i]] = current_id
-            current_id += 1
-    
-    for k in p2.keys():
-        if(k not in translate_dict_p2):
-            translate_dict_p2[k] = current_id
-            current_id += 1
-        
-    return translate_dict_p1,translate_dict_p2
 
 # def reid_from_dict(trans_dict,p1):
 #     print(p1)
@@ -278,6 +234,8 @@ if __name__ == "__main__":
         c1 = []
         for k in pc1.keys(): c1.extend(pc1[k]) 
     
+    
+    mat_relations = np.empty((0, len(cameras)))
     while  i < 16:
         # print(cam_pickles)
         p2 = pickle.load(open(cam_pickles[i], "rb"))
@@ -287,18 +245,23 @@ if __name__ == "__main__":
             for k in pc2.keys(): c2.extend(pc2[k]) 
         dists = relation_cams[j][i]
 
-        translate_dict_p1,translate_dict_p2 = relate_tracks(dists, p1, p2)
+        # translate_dict_p1,translate_dict_p2 = relate_tracks(dists, p1, p2)
+        mat_relations = generate_global_dict(mat_relations, cameras, 
+                                             j, i, p1, p2, dists,
+                                             win_thrs=0.3)
+        print(mat_relations)
+        # generate_mat(mat_relations, cameras, j, i, 
         
-        new_p1 = reid_from_dict(translate_dict_p1,all_cam_dict[j])
-        new_p2 = reid_from_dict(translate_dict_p2,all_cam_dict[i])
+        # new_p1 = reid_from_dict(translate_dict_p1,all_cam_dict[j])
+        # new_p2 = reid_from_dict(translate_dict_p2,all_cam_dict[i])
         
-        tracking_metrics = mot_metrics()
-        evaluate_mot(tracking_metrics,gt_all_cam_dict[j],new_p1,number_frames[j])
-        evaluate_mot(tracking_metrics,gt_all_cam_dict[i],new_p2,number_frames[i])
+        # tracking_metrics = mot_metrics()
+        # evaluate_mot(tracking_metrics,gt_all_cam_dict[j],new_p1,number_frames[j])
+        # evaluate_mot(tracking_metrics,gt_all_cam_dict[i],new_p2,number_frames[i])
         
         # tracking_metrics.update(new_p2,gt_all_cam_dict[i])
-        idf1, idp, idr = tracking_metrics.get_metrics()
-        print("idf1: ", idf1)
+        # idf1, idp, idr = tracking_metrics.get_metrics()
+        # print("idf1: ", idf1)
         
         res = display.display_heatmap(dists)
         
