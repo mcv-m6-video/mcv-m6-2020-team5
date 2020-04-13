@@ -43,4 +43,10 @@ def calculate_matrices(cam_pickles):
         
             relation_cams[cam1][cam2] = create_matrix(p1, p2)
     return relation_cams
-        
+
+def recalculate_matrices(dict1, cam1, dict2, cam2):
+    relation_cams = {}
+    relation_cams[cam1] = {}
+    relation_cams[cam1][cam2] = create_matrix(dict1, dict2)
+    
+    return relation_cams        

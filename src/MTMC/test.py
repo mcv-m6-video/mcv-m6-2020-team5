@@ -10,12 +10,13 @@ from torchreid.utils import load_pretrained_weights
 import os
 import pickle
 from model import Model
-from metrics import calculate_matrices
+from metrics import calculate_matrices, recalculate_matrices
 from collections import OrderedDict
 
 import glob
 from mot import mot_metrics
-from track_relation import generate_global_dict
+import track_relation
+# from track_relation import generate_global_dict
 # classifies the dictionary by track instead of by frames
 def regenerate_tracks(camera_dict):
     track_dict = {}
@@ -126,13 +127,12 @@ def inside_dims(idx, mn, mx):
     return mn < idx <= mx 
 
 
-# def reid_from_dict(trans_dict,p1):
-#     print(p1)
-#     new_dict = {}
-#     for k in p1.keys():
-#         new_k = trans_dict[k]
-#         new_dict[new_k] = p1[k]
-#     return new_dict
+def arrange_dict_by_id(trans_dict,p1):
+    new_dict = {}
+    for k in p1.keys():
+        new_k = trans_dict[k]
+        new_dict[new_k] = p1[k]
+    return new_dict
 
 def reid_from_dict(trans_dict,cam_dict):
     new_dict = {}
@@ -146,6 +146,23 @@ def reid_from_dict(trans_dict,cam_dict):
         new_dict[frame] = frame_boxes
     return new_dict
 
+def reid_form_matrix(matrix, all_cam_dict):
+    all_cam_dict_new = {}
+    for id_c in all_cam_dict.keys():
+        idx_c = np.where(np.array(cameras)==id_c)[0][0]
+        cam_dict = all_cam_dict[id_c]
+        new_dict = {}
+        for frame in cam_dict:
+            frame_boxes = []
+            boxes = cam_dict[frame]
+            for box in boxes:
+                new_k = np.where(matrix[:, idx_c]==box[4])[0][0]
+                frame_boxes.append((box[0],box[1],box[2],box[3],new_k,box[5]))
+            new_dict[frame] = frame_boxes
+        all_cam_dict_new[id_c] = new_dict
+    return all_cam_dict_new
+
+                
 def read_number_frames(path, camera):
     with open (path, 'rt') as number_frames:
         for line in number_frames:
@@ -153,6 +170,47 @@ def read_number_frames(path, camera):
                 total_frames = int(line.split(' ')[1])  
     return total_frames  
 
+def merge_cameras_dict(dict1, dict2): 
+    ''' Merge dictionaries and keep values of common keys in list'''
+    # dict3 = {**dict1, **dict2}
+    # for key, value in dict3.items():
+    #     if key in dict1 and key in dict2:
+    #         dict3[key] = value.extend(dict1[key])
+            
+    dict3 = {}
+    
+    for key in dict1.keys():
+        if(key in dict2.keys()):
+            dict3[key] = dict1[key] + dict2[key]
+        else:
+            dict3[key] = dict1[key]
+    
+    for key in dict2.keys():
+        if(key not in dict3.keys()):
+            dict3[key] = dict2[key]
+ 
+    return dict3
+
+# def merge_cameras_matrix(cam_matrix, dict1, dict2, id_c1, id_c2):
+#     dict3 = dict1.copy()
+#     idx_c1 = np.where(np.array(cameras)==id_c1)[0][0]
+#     idx_c2 = np.where(np.array(cameras)==id_c2)[0][0]
+    
+    
+#     for tracklet in cam_matrix:
+#         idx_trk_c1 = tracklet[idx_c1]
+#         idx_trk_c2 = tracklet[idx_c2]
+#         if(idx_trk_c1 == -1 and idx_trk_c2 == -1):
+#             continue
+#         if(idx_trk_c1 != -1 and idx_trk_c2 == -1):
+#             dict3[idx_trk_c1] = dict1[idx_trk_c1]
+#         if(idx_trk_c1 == -1 and idx_trk_c2 != -1):
+#             dict3[idx_trk_c2] = dict2[idx_trk_c2]
+#         if(idx_trk_c1 != -1 and idx_trk_c2 != -1):
+#             dict3[idx_trk_c1]
+#     for k in dict2.keys():
+#         dict3[key] = 
+    
 def evaluate_mot(mot_obj,gt_dict,pred_dict,num_frames):
     
     for frame in range(num_frames):
@@ -165,7 +223,7 @@ def evaluate_mot(mot_obj,gt_dict,pred_dict,num_frames):
         else:
             gt_rects = []          
         mot_obj.update(dt_rects,gt_rects)
-        
+    
     
 
     
@@ -179,7 +237,10 @@ if __name__ == "__main__":
     load_pickles = True
     show_cars = True
     max_permitted_size = 150*150*3
+    use_matrix = True
+    merge_features = False
     number_frames = {}
+    view_validation = True
     
     for cam in cameras:
         number_frames[cam] = read_number_frames("../../datasets/AIC20_track3_MTMC/cam_framenum/S" + f"{3:02d}" + '.txt', cam)
@@ -210,11 +271,15 @@ if __name__ == "__main__":
             pickle.dump(cam_pickles, f)
     else:
         # if(not show_cars):
-        cam_pickles = {c: os.path.join(out_path, f"{c}.pkl") for c in cameras}
+        cam_pickles = OrderedDict()
+        for c in cameras:
+            cam_pickles[c] = os.path.join(out_path, f"{c}.pkl")
         # cam_pickles = pickle.load(open(ppath, "rb"))
         if(show_cars):
             # img_pickles = pickle.load(open(ipath, "rb"))
-            img_pickles = {c: os.path.join(out_path, f"{c}_imgs.pkl") for c in cameras}
+            img_pickles = OrderedDict()
+            for c in cameras:
+                img_pickles[c] = os.path.join(out_path, f"{c}_imgs.pkl")
 
     
     relation_cams = calculate_matrices(cam_pickles)
@@ -225,75 +290,108 @@ if __name__ == "__main__":
     # display.display_heatmap(relation_cams[10][11])
     # a = "y"
     cv2.namedWindow("res")
-    i = 11
-    j = 10
-    print(cam_pickles)
-    p1 = pickle.load(open(cam_pickles[j], "rb"))
-    if(show_cars):
-        pc1 = pickle.load(open(img_pickles[j], "rb"))
-        c1 = []
-        for k in pc1.keys(): c1.extend(pc1[k]) 
-    
-    
-    mat_relations = np.empty((0, len(cameras)))
-    while  i < 16:
-        # print(cam_pickles)
-        p2 = pickle.load(open(cam_pickles[i], "rb"))
-        if(show_cars):
-            pc2 = pickle.load(open(img_pickles[i], "rb"))
-            c2 = []
-            for k in pc2.keys(): c2.extend(pc2[k]) 
-        dists = relation_cams[j][i]
+    # i = 11
+    # j = 10
+    cam_merge = {}
 
-        # translate_dict_p1,translate_dict_p2 = relate_tracks(dists, p1, p2)
-        mat_relations = generate_global_dict(mat_relations, cameras, 
-                                             j, i, p1, p2, dists,
-                                             win_thrs=0.3)
-        print(mat_relations)
-        # generate_mat(mat_relations, cameras, j, i, 
-        
-        # new_p1 = reid_from_dict(translate_dict_p1,all_cam_dict[j])
-        # new_p2 = reid_from_dict(translate_dict_p2,all_cam_dict[i])
-        
-        # tracking_metrics = mot_metrics()
-        # evaluate_mot(tracking_metrics,gt_all_cam_dict[j],new_p1,number_frames[j])
-        # evaluate_mot(tracking_metrics,gt_all_cam_dict[i],new_p2,number_frames[i])
-        
-        # tracking_metrics.update(new_p2,gt_all_cam_dict[i])
-        # idf1, idp, idr = tracking_metrics.get_metrics()
-        # print("idf1: ", idf1)
-        
-        res = display.display_heatmap(dists)
-        
-        display.print_grid(res, p1, p2)
-        # a = input("Continue? y/n")
-        k = -1
-        pressed = False
+    
+    for j in cameras:
+        # print(cam_pickles)
+        p1 = pickle.load(open(cam_pickles[j], "rb"))
         if(show_cars):
-            cv2.setMouseCallback("res", display.show_pair_imgs, (c1, c2))
-        while not pressed:
-            # rshow = display.obtain_img(res, display.sel_x, display.sel_y)
-            cv2.imshow("res", res)
-            x,y = display.obtain_xy()
-            # print(x, y)
-            try:
-                img1 = c1[y]
-                img2 = c2[x]
-            except:
-                pass
-            if(x > -1 and y > -1):        
-                cv2.imshow("car1", img1)
-                cv2.imshow("car2", img2)
-                res_i = display.print_axis(res)
-                cv2.imshow("res", res_i)
-            k = cv2.waitKey(1)
-            if(k != -1):
-                print("press 'c' to continue")
-                print("key:", k)
-            if(k == 99):
-                i+=1
-                pressed = True
+            pc1 = pickle.load(open(img_pickles[j], "rb"))
+            c1 = []
+            for k in pc1.keys(): c1.extend(pc1[k]) 
+        mat_relations = np.empty((0, len(cameras)))
+        for i in cameras:
+            if i==j: continue
+            # print(cam_pickles)
+            p2 = pickle.load(open(cam_pickles[i], "rb"))
+            if(merge_features):
+                if not cam_merge: 
+                    pass
+                else: 
+                    relation_cams = recalculate_matrices(cam_merge, j, p2, i)
+                    p1 = cam_merge
+                    
+            if(show_cars):
+                pc2 = pickle.load(open(img_pickles[i], "rb"))
+                c2 = []
+                for k in pc2.keys(): c2.extend(pc2[k]) 
+            dists = relation_cams[j][i]
     
+            if(not use_matrix):
+                translate_dict_p1,translate_dict_p2 = track_relation.relate_tracks(dists, p1, p2)
+                for j in range(10,i):
+                    all_cam_dict[j] = reid_from_dict(translate_dict_p1,all_cam_dict[j])
+                all_cam_dict[i] = reid_from_dict(translate_dict_p2,all_cam_dict[i]) 
+                
+                id_p1 = arrange_dict_by_id(translate_dict_p1, p1)
+                id_p2 = arrange_dict_by_id(translate_dict_p2, p2)
+            else:
+                mat_relations = track_relation.generate_global_dict(mat_relations, cameras, 
+                                                     j, i, p1, p2, dists,
+                                                     win_thrs=0.3)
+                # for j in range(10,i):
+                #     all_cam_dict[j] = reid_from_matrix(mat_relations,all_cam_dict[j])
+                # all_cam_dict[i] = reid_from_dict(translate_dict_p2,all_cam_dict[i]) 
+                print(mat_relations)    
+            # generate_mat(mat_relations, cameras, j, i, 
     
-    print()
+            
+    
+            if(merge_features):
+                if(not use_matrix):
+                    cam_merge = merge_cameras_dict(id_p1, id_p2) 
+                else:
+                    raise(NotImplementedError("Merge is not available for matrix yet"))
+    
+            res = display.display_heatmap(dists)
+            
+            display.print_grid(res, p1, p2)
+            # a = input("Continue? y/n")
+            k = -1
+            pressed = False
+            if(show_cars):
+                cv2.setMouseCallback("res", display.show_pair_imgs, (c1, c2))
+            while not pressed:
+                # rshow = display.obtain_img(res, display.sel_x, display.sel_y)
+                cv2.imshow("res", res)
+                x,y = display.obtain_xy()
+                # print(x, y)
+                try:
+                    img1 = c1[y]
+                    img2 = c2[x]
+                except:
+                    pass
+                if(x > -1 and y > -1):        
+                    cv2.imshow("car1", img1)
+                    cv2.imshow("car2", img2)
+                    res_i = display.print_axis(res)
+                    cv2.imshow("res", res_i)
+                k = cv2.waitKey(1)
+                if(k != -1):
+                    print("press 'c' to continue")
+                    print("key:", k)
+                if(k == 99):
+                    i+=1
+                    pressed = True
+        tracking_metrics = mot_metrics()            
+        
+        if(use_matrix):
+            all_cam_dict = reid_form_matrix(mat_relations, all_cam_dict)
+        for cam_num in cameras:
+            evaluate_mot(tracking_metrics,gt_all_cam_dict[cam_num],
+                         all_cam_dict[cam_num],number_frames[cam_num])
+            idf1, idp, idr = tracking_metrics.get_metrics()
+            # print(f"Cam {cam_num} has idf1: ", idf1)
+     
+        # tracking_metrics.update(new_p2,gt_all_cam_dict[i])
+        idf1, idp, idr = tracking_metrics.get_metrics()
+        print("idf1: ", idf1)
+        
+        print()
+        
+        if(view_validation):
+            display.view_cars_matrix(mat_relations, img_pickles)
     

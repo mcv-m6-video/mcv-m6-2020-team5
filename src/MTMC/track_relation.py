@@ -34,7 +34,7 @@ def obtain_votation_mat(dists, p1, p2):
     return winner_idx, win_percent
 
 def relate_tracks(dists, p1, p2, win_thrs=0.3):
-    winner_idx, win_percent = obtain_votation_mat(dist, p1, p2)
+    winner_idx, win_percent = obtain_votation_mat(dists, p1, p2)
     
     translate_dict_p1 = {}
     translate_dict_p2 = {}

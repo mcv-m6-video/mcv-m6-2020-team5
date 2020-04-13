@@ -15,7 +15,13 @@ def display_min(dist_mat):
     rgb = cv2.cvtColor(nzeros*255,cv2.COLOR_GRAY2RGB)
     return rgb
 
-def display_heatmap(dist_mat):
+# def star_mask(patch, color):
+#     for x in range(patch.shape[0]):
+#         patch[x,x,:] = color
+#         patch[x,-x,:] = color
+def display_heatmap(dist_mat, display_peaks = True, peak_color=(0,255,165)):
+
+   
     
     # row_sums = dist_mat.sum(axis=1)
     # new_matrix = (dist_mat / row_sums[:, np.newaxis]).numpy()
@@ -42,6 +48,9 @@ def display_heatmap(dist_mat):
     new_matrix = 255-new_matrix
     # gray = cv2.cvtColor(new_matrix, cv2.COLOR_RGB2GRAY)
     out = cv2.applyColorMap(new_matrix, cv2.COLORMAP_OCEAN)
+    if(display_peaks):
+        out[np.arange(0, dist_mat.shape[0]),dist_mat.argmin(axis=1),:]=peak_color
+
     # cv2.imshow("res", out); cv2.waitKey(1000)
     return out
 
@@ -103,3 +112,69 @@ def show_pair_imgs(event,x,y,flags,param):
 def obtain_xy():
     global sel_x, sel_y 
     return sel_x, sel_y
+
+
+
+
+from collections import OrderedDict
+def view_cars_matrix(mat_relations, img_pickles):
+    exited = False
+    i = 0
+    while not exited and i < len(mat_relations):
+        tracklet = mat_relations[i]
+        exited, plus_or_minus = view_cars_tracklet(tracklet, img_pickles)
+        i += plus_or_minus
+        if(i < 0): i = 0
+        if(i >= len(mat_relations)):
+            i = len(mat_relations)-1
+            print("No more tracklets to display!")
+        
+def view_cars_tracklet(tracklet, img_pickles):
+    print("Tracklet:", tracklet)
+    c_imgs = OrderedDict()
+    for car_id, (cam_id, pickle_path) in zip(tracklet,  img_pickles.items()):
+        p_c = pickle.load(open(pickle_path, "rb"))
+        if(car_id != -1):
+            imgs = p_c[int(car_id)]
+            del p_c
+            c_imgs[cam_id] = imgs
+    # print("Images extracted:", c_imgs)
+    i=0
+    exited = False
+    another_tracklet = False
+    plus_or_minus = +1
+    print("press 'q' to exit")
+    print("press 'a' to go to prev image")
+    print("press 'd' to go to next image")
+    print("press 'w' to go to prev tracklet")
+    print("press 's' to go to next tracklet")
+    while not exited and not another_tracklet:
+        # imgs_to_show = OrderedDict()
+        for k in c_imgs.keys():
+            if(i < len(c_imgs[k])):
+                cv2.imshow(str(k), c_imgs[k][i])
+            
+        k = cv2.waitKey(0)
+        if(k != -1):
+            print("key:", k)
+        if(k == ord("d")):
+            i+=1
+        if(k == ord("a")):
+            i-=1
+        if(k == ord("w")):
+            another_tracklet = True
+            plus_or_minus = -1
+        if(k == ord("s")):
+            another_tracklet = True
+            plus_or_minus = +1
+        if(k == ord("q")):
+            exited = True
+        if(i < 0):
+            i = 0
+    return exited, plus_or_minus
+            
+            
+            
+            
+            
+            
