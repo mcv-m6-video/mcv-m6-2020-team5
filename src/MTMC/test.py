@@ -236,11 +236,12 @@ if __name__ == "__main__":
     fc_normalize = False
     load_pickles = True
     show_cars = True
+    show_cars = False
     max_permitted_size = 150*150*3
-    use_matrix = True
-    merge_features = False
+    use_matrix = False
+    merge_features = True
     number_frames = {}
-    view_validation = True
+    view_validation = False
     
     for cam in cameras:
         number_frames[cam] = read_number_frames("../../datasets/AIC20_track3_MTMC/cam_framenum/S" + f"{3:02d}" + '.txt', cam)
@@ -383,12 +384,16 @@ if __name__ == "__main__":
         for cam_num in cameras:
             evaluate_mot(tracking_metrics,gt_all_cam_dict[cam_num],
                          all_cam_dict[cam_num],number_frames[cam_num])
-            idf1, idp, idr = tracking_metrics.get_metrics()
+            idf1, idp, idr,precision,recall = tracking_metrics.get_metrics()
             # print(f"Cam {cam_num} has idf1: ", idf1)
      
         # tracking_metrics.update(new_p2,gt_all_cam_dict[i])
-        idf1, idp, idr = tracking_metrics.get_metrics()
+        idf1, idp, idr, precision, recall  = tracking_metrics.get_metrics()
         print("idf1: ", idf1)
+        print("idp: ", idp)
+        print("idr: ", idr)
+        print("precision: ", precision)
+        print("recall: ", recall)
         
         print()
         
