@@ -12,9 +12,10 @@ import torch
 
 class Model(object):
     def __init__(self,
+                 name = "resnet50",
                  weights = "./log/resnet50_ai2019_triplet/1/model.pth.tar-2"):
         self.model = torchreid.models.build_model(
-                                name='resnet50',
+                                name=name,
                                 num_classes=500,#Asignar a prueba error, de momento
                                 loss='triplet',
                                 pretrained=True

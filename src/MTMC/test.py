@@ -250,8 +250,11 @@ if __name__ == "__main__":
     
     use_gpu = torch.cuda.is_available()
 
+    # name = "osnet_ain_x1_0"
+    # dir_to_weights = "../../weights/osnet_ain_x1_0.pth"
+    name = "resnet50"
     dir_to_weights = '../../weights/resnet50_triple_10.pth' #Añadir la direccion als weights
-    model = Model(dir_to_weights)
+    model = Model(name, dir_to_weights)
     # load_pretrained_weights(model, dir_to_weights)
     ppath = os.path.join(out_path, f"cam_pickles.pkl")
     ipath = os.path.join(out_path, f"cam_imgs_pickles.pkl")
