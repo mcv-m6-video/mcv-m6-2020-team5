@@ -5,81 +5,15 @@ Created on Sun Apr  5 19:51:10 2020
 
 @author: dazmer
 """
-import glob
+
+from AI2019_dataset import AI2019Dataset, get_datamanager
 import os
 import torchreid
 # torchreid.data.ImageData
-class AI2019Dataset(torchreid.data.ImageDataset):
-    dataset_dir = 'aic20_reID_bboxes'
 
-    def __init__(self, root='', combineall=True, **kwargs):
-        self.root = os.path.abspath(os.path.expanduser(root))
-        self.data_dir = os.path.join(self.root, self.dataset_dir)
-        print(self.data_dir)
+DATASET_PATH = '/media/dazmer/datasets/traffic/AIC20_track3_MTMC/'
 
-        self.train_dir = os.path.join(self.data_dir,"bounding_box_train")
-        self.query_dir = os.path.join(self.data_dir,"bounding_box_test_reduced")
-        self.gallery_dir=os.path.join(self.data_dir,"bounding_box_test_reduced")
-        
-        train = self.process_dir(self.train_dir, relabel=True)
-        query = self.process_dir(self.query_dir, relabel=False)
-        gallery = self.process_dir(self.gallery_dir, relabel=False)
-
-        super(AI2019Dataset, self).__init__(train, 
-                                            query, 
-                                            gallery,
-                                            **kwargs)
-    def process_dir(self, data_dir, relabel=False):
-        img_paths = glob.glob(os.path.join(data_dir, '*.jpg'))
-        
-        pid_container = set()
-        for img_path in img_paths:
-            # print("IMG PATH:", img_path)
-            # print("RSPLIT:", 
-            img_name = img_path.rsplit("/", 1)[-1]
-            pid, cid, iid = img_name.split("_")
-            iid = iid.split(".")[0]
-            pid = int(pid)
-            # cid = int(cid[1:])
-            if(pid == -1):
-                 continue # junk images are just ignored
-            pid_container.add(pid)
-            
-        pid2label = {pid: label for label, pid in enumerate(pid_container)}
-    
-        data = []
-        for img_path in img_paths:
-            img_name = img_path.rsplit("/", 1)[-1]
-            pid, camid, iid = img_name.split("_")
-            pid = int(pid)
-            camid = int(camid[1:])
-            
-            if pid == -1:
-                continue # junk images are just ignored
-            assert 0 <= pid <= 1501 # pid == 0 means background
-            assert 1 <= camid
-            camid -= 1 # index starts from 0
-            if relabel:
-                pid = pid2label[pid]
-            data.append((img_path, pid, camid))
-
-        return data
-    
-    
-torchreid.data.register_image_dataset('AI2019_challange', AI2019Dataset)
-
-datamanager = torchreid.data.ImageDataManager(
-    root='/media/dazmer/datasets/traffic/AIC20_track3_MTMC/',
-    sources='AI2019_challange',
-    targets='AI2019_challange',
-    height=200,
-    width=200,
-    batch_size_train=32,
-    batch_size_test=32,
-    num_instances=4,
-    train_sampler='RandomIdentitySampler',
-    transforms=['random_flip', 'random_crop']
-)
+datamanager = get_datamanager(DATASET_PATH)
 
 model = torchreid.models.build_model(
     name='resnet50',
@@ -121,7 +55,6 @@ engine = torchreid.engine.ImageTripletEngine(
 )
         
 def train(model):
-    
     f_path = 'log/resnet50_ai2019/{}'
     i = 0
     done = False
