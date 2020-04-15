@@ -172,7 +172,7 @@ The system for MTMC (Task 2) can be executed by using the following command on t
 ```
 python src/MTMC/test.py 
 ```
-To train the triplet network, you should check [the readme file for the network](https://github.com/mcv-m6-video/mcv-m6-2020-team5/blob/master/src/MTMC/reid_training/README.md).
+To train the triplet network, you should check [the readme file](https://github.com/mcv-m6-video/mcv-m6-2020-team5/blob/master/src/MTMC/reid_training/README.md) for the network.
 
 All the modifiable parameters for that system(cameras, feature normalization, load_pickles, max_permitted_size,...) can be found in the beginning of the main function from that file.
 
