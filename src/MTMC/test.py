@@ -156,7 +156,8 @@ def reid_form_matrix(matrix, all_cam_dict):
             frame_boxes = []
             boxes = cam_dict[frame]
             for box in boxes:
-                new_k = np.where(matrix[:, idx_c]==box[4])[0][0]
+                res = np.where(matrix[:, idx_c]==box[4])
+                new_k = res[0][0]
                 frame_boxes.append((box[0],box[1],box[2],box[3],new_k,box[5]))
             new_dict[frame] = frame_boxes
         all_cam_dict_new[id_c] = new_dict
@@ -248,15 +249,15 @@ if __name__ == "__main__":
     cameras = [10, 11, 12, 13, 14, 15]
     # cameras = [10, 11]
     fc_normalize = False
-    load_pickles = False
-    show_cars = False
+    load_pickles = True
     show_cars = False
     max_permitted_size = 150*150*3
     use_matrix = False
     merge_features = True
     number_frames = {}
     view_validation = False
-    win_thr = 0.3
+    win_thr = 1
+    visualize_votation = False
     
     for cam in cameras:
         number_frames[cam] = read_number_frames("../../datasets/AIC20_track3_MTMC/cam_framenum/S" + f"{sequence:02d}" + '.txt', cam)
@@ -269,7 +270,7 @@ if __name__ == "__main__":
     # name = "osnet_ain_x1_0"
     # dir_to_weights = "../../weights/osnet_ain_x1_0.pth"
     name = "resnet50"
-    dir_to_weights = '../../weights/resnet50_triple_10.pth' #Añadir la direccion als weights
+    dir_to_weights = '../../weights/resnet50_triple_old.pth' #Añadir la direccion als weights
     model = Model(name, dir_to_weights)
     # load_pretrained_weights(model, dir_to_weights)
     ppath = os.path.join(out_path, f"cam_pickles.pkl")
@@ -314,7 +315,7 @@ if __name__ == "__main__":
     cam_merge = {}
 
     
-    for j in cameras:
+    for j in [10]:
         # print(cam_pickles)
         p1 = pickle.load(open(cam_pickles[j], "rb"))
         if(show_cars):
@@ -340,7 +341,7 @@ if __name__ == "__main__":
             dists = relation_cams[j][i]
     
             if(not use_matrix):
-                translate_dict_p1,translate_dict_p2 = track_relation.relate_tracks(dists, p1, p2)
+                translate_dict_p1,translate_dict_p2 = track_relation.relate_tracks(dists, p1, p2, win_thrs=win_thr)
                 for j in range(10,i):
                     all_cam_dict[j] = reid_from_dict(translate_dict_p1,all_cam_dict[j])
                 all_cam_dict[i] = reid_from_dict(translate_dict_p2,all_cam_dict[i]) 
@@ -365,36 +366,37 @@ if __name__ == "__main__":
                 else:
                     raise(NotImplementedError("Merge is not available for matrix yet"))
     
-            res = display.display_heatmap(dists)
             
-            display.print_grid(res, p1, p2)
-            # a = input("Continue? y/n")
-            k = -1
-            pressed = False
-            if(show_cars):
-                cv2.setMouseCallback("res", display.show_pair_imgs, (c1, c2))
-            while not pressed:
-                # rshow = display.obtain_img(res, display.sel_x, display.sel_y)
-                cv2.imshow("res", res)
-                x,y = display.obtain_xy()
-                # print(x, y)
-                try:
-                    img1 = c1[y]
-                    img2 = c2[x]
-                except:
-                    pass
-                if(x > -1 and y > -1):        
-                    cv2.imshow("car1", img1)
-                    cv2.imshow("car2", img2)
-                    res_i = display.print_axis(res)
-                    cv2.imshow("res", res_i)
-                k = cv2.waitKey(1)
-                if(k != -1):
-                    print("press 'c' to continue")
-                    print("key:", k)
-                if(k == 99):
-                    i+=1
-                    pressed = True
+            if(visualize_votation):
+                res = display.display_heatmap(dists)
+                display.print_grid(res, p1, p2)
+                # a = input("Continue? y/n")
+                k = -1
+                pressed = False
+                if(show_cars):
+                    cv2.setMouseCallback("res", display.show_pair_imgs, (c1, c2))
+                while not pressed:
+                    # rshow = display.obtain_img(res, display.sel_x, display.sel_y)
+                    cv2.imshow("res", res)
+                    x,y = display.obtain_xy()
+                    # print(x, y)
+                    try:
+                        img1 = c1[y]
+                        img2 = c2[x]
+                    except:
+                        pass
+                    if(x > -1 and y > -1):        
+                        cv2.imshow("car1", img1)
+                        cv2.imshow("car2", img2)
+                        res_i = display.print_axis(res)
+                        cv2.imshow("res", res_i)
+                    k = cv2.waitKey(1)
+                    if(k != -1):
+                        print("press 'c' to continue")
+                        print("key:", k)
+                    if(k == 99):
+                        i+=1
+                        pressed = True
         tracking_metrics = mot_metrics()            
         
         if(use_matrix):
