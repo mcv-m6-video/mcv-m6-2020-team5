@@ -256,7 +256,7 @@ if __name__ == "__main__":
     merge_features = True
     number_frames = {}
     view_validation = False
-    win_thr = 0.3
+    win_thr = 0.0
     
     for cam in cameras:
         number_frames[cam] = read_number_frames("../../datasets/AIC20_track3_MTMC/cam_framenum/S" + f"{sequence:02d}" + '.txt', cam)
@@ -340,7 +340,7 @@ if __name__ == "__main__":
             dists = relation_cams[j][i]
     
             if(not use_matrix):
-                translate_dict_p1,translate_dict_p2 = track_relation.relate_tracks(dists, p1, p2)
+                translate_dict_p1,translate_dict_p2 = track_relation.relate_tracks(dists, p1, p2,win_thrs=win_thr)
                 for j in range(10,i):
                     all_cam_dict[j] = reid_from_dict(translate_dict_p1,all_cam_dict[j])
                 all_cam_dict[i] = reid_from_dict(translate_dict_p2,all_cam_dict[i]) 
