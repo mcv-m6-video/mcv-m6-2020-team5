@@ -159,7 +159,20 @@ python src/main.py --general_config tracker.ttype = "optical_flow_track"
 - Task 1: Multi-object Tracking with Single Camera
 - Task 2: Multi-object Tracking with Multiple Cameras
 
+### Execution
+#### Task 1
+The model for MTSC (Task 1) can be executed by using the following command on the terminal:
+```
+python src/MTSC.py --general_config tracker.ttype = "optical_flow_track"
+```
+The parameter tracker.ttype can take the following values: "overlap", "centroid", "sort" and "optical_flow_track". All the other modifiable parameters with its possible values can be found on config/general.py.
 
+#### Task 2
+The system for MTMC (Task 2) can be executed by using the following command on the terminal. However, to run that system we need to have the results obtained from the system from Task 1:
+```
+python src/MTMC/test.py 
+```
+All the modifiable parameters for that system(cameras, feature normalization, load_pickles, max_permitted_size,...) can be found in the beginning of the main function from that file.
 
 
  
