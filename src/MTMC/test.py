@@ -248,8 +248,8 @@ if __name__ == "__main__":
     cameras = [10, 11, 12, 13, 14, 15]
     # cameras = [10, 11]
     fc_normalize = False
-    load_pickles = True
-    show_cars = True
+    load_pickles = False
+    show_cars = False
     show_cars = False
     max_permitted_size = 150*150*3
     use_matrix = False
@@ -258,7 +258,7 @@ if __name__ == "__main__":
     view_validation = False
     
     for cam in cameras:
-        number_frames[cam] = read_number_frames("../../datasets/AIC20_track3_MTMC/cam_framenum/S" + f"{3:02d}" + '.txt', cam)
+        number_frames[cam] = read_number_frames("../../datasets/AIC20_track3_MTMC/cam_framenum/S" + f"{sequence:02d}" + '.txt', cam)
 
     all_cam_dict = generate_track_for_all_cams(in_path,sequence,cameras,'det')
     gt_all_cam_dict = generate_track_for_all_cams(in_path,sequence,cameras,'gt')
