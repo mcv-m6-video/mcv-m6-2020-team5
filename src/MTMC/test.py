@@ -256,8 +256,9 @@ if __name__ == "__main__":
     merge_features = True
     number_frames = {}
     view_validation = False
-    win_thr = 1
+    win_thr = 0.3
     visualize_votation = False
+
     
     for cam in cameras:
         number_frames[cam] = read_number_frames("../../datasets/AIC20_track3_MTMC/cam_framenum/S" + f"{sequence:02d}" + '.txt', cam)
