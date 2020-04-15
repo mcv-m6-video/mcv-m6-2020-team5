@@ -21,7 +21,7 @@ Then, on week 3, we fine-tuned some object detectors from the Detectron2 framewo
 
 On week 4 we implemented a simple method for optical flow estimation and tested some of the state-of-the-art methods for that purpose. Then we implemented a method for video stabilization based on our method for estimating optical flow and compared it to the state-of-the-art and finally we tried to improve the multi-object tracking for single camera using the optical flow estimations. 
 
-Finally, on week 5, we used all the previous work done on the project to implement a system for Multi-object Tracking for Single Camera. Then, using that method we implemented a system for Multi-object Tracking for Multiple Cameras using a triplet network and a complex algorithm based on the euclidean distances between the embeddings obtained from the triplet network. 
+Finally, on week 5, we used all the previous work done on the project to implement a system for Multi-object Tracking on Single Camera. Then, using that method we implemented a system for Multi-object Tracking on Multiple Cameras using a triplet network and a complex algorithm based on the euclidean distances between the embeddings obtained from the triplet network and a voting scheme based on the corresponding minimums on that distance for the different frames of a track to relate tracklets between cameras. 
 
 ## Week 1
 
