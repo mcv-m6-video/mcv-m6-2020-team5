@@ -14,9 +14,13 @@ Final presentation slides: https://docs.google.com/presentation/d/1pDFVmdLl78mPi
 This project aims to implement a system able to perform multi-object tracking in both single or multiple cameras.
 
 On week 1 we implemented the main metrics used for the evaluation of the predicted detections and optical flow estimations. 
+
 On week 2 we developed some methods to perform foreground-background segmentation such as gaussian distribution or recursive gaussian modelling. 
+
 Then, on week 3, we fine-tuned some object detectors from the Detectron2 framework to perform car detection, implemented the maximum overlap method for object tracking and introduced also the Kalman filter to improve its performance. 
+
 On week 4 we implemented a simple method for optical flow estimation and tested some of the state-of-the-art methods for that purpose. Then we implemented a method for video stabilization based on our method for estimating optical flow and compared it to the state-of-the-art and finally we tried to improve the multi-object tracking for single camera using the optical flow estimations. 
+
 Finally, on week 5, we used all the previous work done on the project to implement a system for Multi-object Tracking for Single Camera. Then, using that method we implemented a system for Multi-object Tracking for Multiple Cameras using a triplet network and a complex algorithm based on the euclidean distances between the embeddings obtained from the triplet network. 
 
 ## Week 1
