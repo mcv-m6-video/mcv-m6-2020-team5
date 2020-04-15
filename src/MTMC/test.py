@@ -224,7 +224,21 @@ def evaluate_mot(mot_obj,gt_dict,pred_dict,num_frames):
             gt_rects = []          
         mot_obj.update(dt_rects,gt_rects)
     
+def evaluate_mot2(cam_list,mot_obj,gt_dict,pred_dict,num_frames):
+    max_frames = max(num_frames.values())
     
+    for i in range(max_frames):
+        for cam_num in cam_list:
+            if(i < num_frames[cam_num]):
+                if i in pred_dict[cam_num]:
+                    dt_rects = pred_dict[cam_num][i]
+                else:
+                    dt_rects = []   
+                if i in gt_dict[cam_num]:
+                    gt_rects = gt_dict[cam_num][i]  
+                else:
+                    gt_rects = []          
+                mot_obj.update(dt_rects,gt_rects)
 
     
 if __name__ == "__main__":
@@ -389,6 +403,7 @@ if __name__ == "__main__":
                          all_cam_dict[cam_num],number_frames[cam_num])
             idf1, idp, idr,precision,recall = tracking_metrics.get_metrics()
             # print(f"Cam {cam_num} has idf1: ", idf1)
+        # evaluate_mot2(cameras,tracking_metrics,gt_all_cam_dict,all_cam_dict,number_frames)
      
         # tracking_metrics.update(new_p2,gt_all_cam_dict[i])
         idf1, idp, idr, precision, recall  = tracking_metrics.get_metrics()
