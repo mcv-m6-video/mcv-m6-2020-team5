@@ -7,7 +7,7 @@ Team 5
 |-------------|-----------------|-------------|------------------|
 |  hamddan4   |   richardseba   | sergiisolaa | sergiocasaspastor|
 
-** Final presentation slides: ** [Slides](https://docs.google.com/presentation/d/1pDFVmdLl78mPiCXpMbp4RYjThJxFH2t5P364LMznqPg/edit?usp=sharing)
+[Final presentation slides](https://docs.google.com/presentation/d/1pDFVmdLl78mPiCXpMbp4RYjThJxFH2t5P364LMznqPg/edit?usp=sharing)
 
 ## Project description
 
