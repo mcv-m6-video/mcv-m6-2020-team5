@@ -7,7 +7,7 @@ Team 5
 |-------------|-----------------|-------------|------------------|
 |  hamddan4   |   richardseba   | sergiisolaa | sergiocasaspastor|
 
-Final presentation slides: https://docs.google.com/presentation/d/1pDFVmdLl78mPiCXpMbp4RYjThJxFH2t5P364LMznqPg/edit?usp=sharing
+** Final presentation slides: ** [Slides](https://docs.google.com/presentation/d/1pDFVmdLl78mPiCXpMbp4RYjThJxFH2t5P364LMznqPg/edit?usp=sharing)
 
 ## Project description
 
@@ -165,7 +165,7 @@ The model for MTSC (Task 1) can be executed by using the following command on th
 ```
 python src/MTSC.py --general_config tracker.ttype = "optical_flow_track"
 ```
-The parameter tracker.ttype can take the following values: "overlap", "centroid", "sort" and "optical_flow_track". All the other modifiable parameters with its possible values can be found on config/general.py.
+The parameter tracker.ttype can take the following values: "overlap", "centroid", "sort" and "optical_flow_track". All the other modifiable parameters with its possible values can be found on config/general.py. Moreover, inside MTSC.py, you can find two flags (train and test). You can set train to True if you want to train a new model for MTSC. Set the test flag to True if you want to test an existing model. Inside MTSC/test_detectron.py and MTSC/train_detectron.py there are more parameters you might need to set. Important: check that the paths to the dataset are correct.
 
 #### Task 2
 The system for MTMC (Task 2) can be executed by using the following command on the terminal. However, to run that system we need to have the results obtained from the system from Task 1:
@@ -174,7 +174,7 @@ python src/MTMC/test.py
 ```
 To train the triplet network, you should check [the readme file](https://github.com/mcv-m6-video/mcv-m6-2020-team5/blob/master/src/MTMC/reid_training/README.md) for the network.
 
-All the modifiable parameters for that system(cameras, feature normalization, load_pickles, max_permitted_size,...) can be found in the beginning of the main function from that file.
+All the modifiable parameters for that system(cameras, feature normalization, load_pickles, max_permitted_size,...) can be found at the beginning of the main function from that file. Important: check that the paths to the dataset are correct.
 
 
  

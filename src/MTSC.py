@@ -16,16 +16,20 @@ from MTSC.train_detectron import train_detectron
 
     
 if __name__ == "__main__":
+    train = False
+    test = True
+    cameras = [10, 11, 12,13,14,15]
     parser = general_parser()
     args = parser.parse_args()
     new_gconfig = []
     configs_jj = []
     if args.general_config is not None:
         new_gconfig.extend(args.general_config)
-    cameras = [10, 11, 12,13,14,15]
-    registered = False
-    for camera in cameras:
-    # train_detectron(new_gconfig)
-        test_detectron(new_gconfig,camera, registered)
-        registered = True
+    if train:
+        train_detectron(new_gconfig)
+    if test:
+        registered = False
+        for camera in cameras:
+            test_detectron(new_gconfig,camera, registered)
+            registered = True
     

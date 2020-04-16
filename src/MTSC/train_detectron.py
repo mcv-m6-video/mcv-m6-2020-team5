@@ -41,17 +41,8 @@ import MTSC.detectron_detect_multicameras as dt
 def train_detectron(new_config):      
     gconf = obtain_general_config(gconfig=new_config)
     
-    dclass = dt.detectron_detector_multicameras()
+    # Set get_images_from_video to True to save the frames of the video into a folder for training
+    get_images_from_video = False
+    
+    dclass = dt.detectron_detector_multicameras(create_dataset=get_images_from_video)
     func_detector = dclass.predict
-
-    
-if __name__ == "__main__":
-    parser = general_parser()
-    args = parser.parse_args()
-    new_gconfig = []
-    configs_jj = []
-    if args.general_config is not None:
-        new_gconfig.extend(args.general_config)
-
-    main(new_gconfig)
-    
