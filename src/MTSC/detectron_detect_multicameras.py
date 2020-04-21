@@ -39,11 +39,12 @@ def string_sort(string_list):
 
 class detectron_detector_multicameras(object):
     def __init__(self,train_frames = 3000, weights_path=None, net=None, 
-                 training = 'True', objects=["bike","car"], reg=None):
+                 training = 'True', objects=["bike","car"], reg=None, create_dataset=False):
         self._n_of_trainings = 0
         self.thr_n_of_training = train_frames
         self.training = training
         self.registered = reg
+        self.create_dataset = create_dataset
         self.tmp_train_frames = []
         self.weights_path = weights_path
         self.cfg = get_cfg()
@@ -52,7 +53,7 @@ class detectron_detector_multicameras(object):
         
     def __initialize_network(self,network):
         if self.training:
-            self.train(self.thr_n_of_training, network) 
+            self.train(self.thr_n_of_training, network, self.create_dataset) 
         retinanet_path = "COCO-Detection/retinanet_R_101_FPN_3x.yaml"
         faster_rcnn_path = "COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml"
         
@@ -92,21 +93,21 @@ class detectron_detector_multicameras(object):
         return DefaultPredictor(self.cfg)
       
         
-    def generate_datasets(self, Ntraining):
-        dataset_train, dataset_val = get_dicts(Ntraining)
+    def generate_datasets(self, Ntraining, get_images):
+        dataset_train, dataset_val = get_dicts(Ntraining, get_images)
         if not self.registered:
             for d in ['train', 'val']:
                 DatasetCatalog.register(d + '_set', lambda d=d: dataset_train if d == 'train' else dataset_val)
                 MetadataCatalog.get(d + '_set').set(thing_classes=['Person', 'None', 'Car'])
 
-    def train(self, training_frames, network):
+    def train(self, training_frames, network, get_images):
 
         if(training_frames <= 0):
             raise ValueError("The number of input frames must be bigger than 0")
         
         self.cfg.OUTPUT_DIR = (f'../datasets/detectron2/{network}')
     
-        self.generate_datasets(training_frames)
+        self.generate_datasets(training_frames, get_images)
             
         retinanet_path = "COCO-Detection/retinanet_R_101_FPN_3x.yaml"
         faster_rcnn_path = "COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml"
@@ -184,7 +185,7 @@ def obtain_global_var_mean():
     global MEAN_IMAGE
     return np.dstack([MEAN_IMAGE]*3)
 
-def get_dicts(N_frames):
+def get_dicts(N_frames, get_images):
     img_dir_train="../datasets/AIC20_track3_MTMC/train/"
     img_dir_test="../datasets/AIC20_track3_MTMC/test/"
     annot_dir="../datasets/"
@@ -212,19 +213,20 @@ def get_dicts(N_frames):
             print(camera_dir)
             gt_frames = read_gt(camera_dir)   
             output_dir_train_camera = os.path.join(camera_dir,output_dir_train)
-            print(output_dir_train_camera)   
-            # if not os.path.exists(output_dir_train_camera):  
-            #     os.mkdir(output_dir_train_camera)
+            if get_images:  
+                if not os.path.exists(output_dir_train_camera):  
+                    os.mkdir(output_dir_train_camera)
                     
-            #     filename = os.path.join(camera_dir, "vdo.avi")
-            #     vidcap = cv2.VideoCapture(filename)
-            #     success,image = vidcap.read()
-            #     count = 0
+                filename = os.path.join(camera_dir, "vdo.avi")
+                vidcap = cv2.VideoCapture(filename)
+                success,image = vidcap.read()
+                count = 0
                 
-            #     while success:
-            #         cv2.imwrite(output_dir_train_camera + "frame_%d.jpg" % count, image)     # save frame as JPEG file      
-            #         success,image = vidcap.read()
-            #         count += 1
+                while success:
+                    cv2.imwrite(output_dir_train_camera + "frame_%d.jpg" % count, image)     # save frame as JPEG file      
+                    success,image = vidcap.read()
+                    print('Saving frame ', count)
+                    count += 1
                 
             
             keys = []
@@ -301,18 +303,19 @@ def get_dicts(N_frames):
             print(camera_dir)
             gt_frames = read_gt(camera_dir)   
             output_dir_test_camera = os.path.join(camera_dir,output_dir_test)   
-            # if not os.path.exists(output_dir_test_camera): 
-            #     os.mkdir(output_dir_test_camera)
- 
-            #     filename = os.path.join(camera_dir, "vdo.avi")
-            #     vidcap = cv2.VideoCapture(filename)
-            #     success,image = vidcap.read()
-            #     count = 0
+            if get_images:  
+                if not os.path.exists(output_dir_train_camera):  
+                    os.mkdir(output_dir_train_camera)
+                    
+                filename = os.path.join(camera_dir, "vdo.avi")
+                vidcap = cv2.VideoCapture(filename)
+                success,image = vidcap.read()
+                count = 0
                 
-            #     while success:
-            #         cv2.imwrite(output_dir_test_camera + "frame_%d.jpg" % count, image)     # save frame as JPEG file      
-            #         success,image = vidcap.read()
-            #         count += 1
+                while success:
+                    cv2.imwrite(output_dir_train_camera + "frame_%d.jpg" % count, image)     # save frame as JPEG file      
+                    success,image = vidcap.read()
+                    count += 1
                         
             keys = []
                 

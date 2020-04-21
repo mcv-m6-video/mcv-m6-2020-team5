@@ -7,6 +7,24 @@ Team 5
 |-------------|-----------------|-------------|------------------|
 |  hamddan4   |   richardseba   | sergiisolaa | sergiocasaspastor|
 
+[Final presentation slides](https://docs.google.com/presentation/d/1pDFVmdLl78mPiCXpMbp4RYjThJxFH2t5P364LMznqPg/edit?usp=sharing)
+
+[Final report](https://www.overleaf.com/read/sqnddjqqdmtv)
+
+## Project description
+
+This project aims to implement a system able to perform multi-object tracking in both single or multiple cameras.
+
+On week 1 we implemented the main metrics used for the evaluation of the predicted detections and optical flow estimations. 
+
+On week 2 we developed some methods to perform foreground-background segmentation such as gaussian distribution or recursive gaussian modelling. 
+
+Then, on week 3, we fine-tuned some object detectors from the Detectron2 framework to perform car detection, implemented the maximum overlap method for object tracking and introduced also the Kalman filter to improve its performance. 
+
+On week 4 we implemented a simple method for optical flow estimation and tested some of the state-of-the-art methods for that purpose. Then we implemented a method for video stabilization based on our method for estimating optical flow and compared it to the state-of-the-art and finally we tried to improve the multi-object tracking for single camera using the optical flow estimations. 
+
+Finally, on week 5, we used all the previous work done on the project to implement a system for Multi-object Tracking on Single Camera. Then, using that method we implemented a system for Multi-object Tracking on Multiple Cameras using a triplet network and a complex algorithm based on the euclidean distances between the embeddings obtained from the triplet network and a voting scheme based on the corresponding minimums on that distance for the different frames of a track to relate tracklets between cameras. 
+
 ## Week 1
 
 ### Tasks
@@ -137,6 +155,28 @@ To execute task 3 you can just execute the main.py file or just execute the foll
 ```
 python src/main.py --general_config tracker.ttype = "optical_flow_track"
 ```
+
+## Week 5
+### Tasks
+- Task 1: Multi-object Tracking with Single Camera
+- Task 2: Multi-object Tracking with Multiple Cameras
+
+### Execution
+#### Task 1
+The model for MTSC (Task 1) can be executed by using the following command on the terminal:
+```
+python src/MTSC.py --general_config tracker.ttype = "optical_flow_track"
+```
+The parameter tracker.ttype can take the following values: "overlap", "centroid", "sort" and "optical_flow_track". All the other modifiable parameters with its possible values can be found on config/general.py. Moreover, inside MTSC.py, you can find two flags (train and test). You can set train to True if you want to train a new model for MTSC. Set the test flag to True if you want to test an existing model. Inside MTSC/test_detectron.py and MTSC/train_detectron.py there are more parameters you might need to set. Important: check that the paths to the dataset are correct.
+
+#### Task 2
+The system for MTMC (Task 2) can be executed by using the following command on the terminal. However, to run that system we need to have the results obtained from the system from Task 1:
+```
+python src/MTMC/test.py 
+```
+To train the triplet network, you should check [the readme file](https://github.com/mcv-m6-video/mcv-m6-2020-team5/blob/master/src/MTMC/reid_training/README.md) for the network.
+
+All the modifiable parameters for that system(cameras, feature normalization, load_pickles, max_permitted_size,...) can be found at the beginning of the main function from that file. Important: check that the paths to the dataset are correct.
 
 
  
