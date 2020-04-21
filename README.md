@@ -9,7 +9,7 @@ Team 5
 
 [Final presentation slides](https://docs.google.com/presentation/d/1pDFVmdLl78mPiCXpMbp4RYjThJxFH2t5P364LMznqPg/edit?usp=sharing)
 
-[Final report](https://www.overleaf.com/read/sqnddjqqdmtv)
+[Final report](https://github.com/mcv-m6-video/mcv-m6-2020-team5/blob/master/M6___Group_05___Final_Report.pdf)
 
 ## Project description
 
