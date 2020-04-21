@@ -27,8 +27,8 @@ model = model.cuda()
 
 optimizer = torchreid.optim.build_optimizer(
     model,
-    optim='amsgrad',
-    lr=0.001
+    optim='adam',
+    lr=0.0001
 )
 
 scheduler = torchreid.optim.build_lr_scheduler(
@@ -48,7 +48,7 @@ engine = torchreid.engine.ImageTripletEngine(
     datamanager, 
     model, 
     optimizer, 
-    margin=0.3,
+    margin=0.5,
     weight_t=0.7, 
     weight_x=1, 
     scheduler=scheduler

@@ -20,7 +20,6 @@ import track_relation
 # classifies the dictionary by track instead of by frames
 def regenerate_tracks(camera_dict):
     track_dict = {}
-    
     for obj_frame,id_frame in zip(camera_dict.values(),camera_dict.keys()):
         id_frame = int(id_frame)
         for obj in obj_frame:
@@ -250,14 +249,14 @@ if __name__ == "__main__":
     # cameras = [10, 11]
     fc_normalize = False
     load_pickles = True
-    show_cars = False
+    show_cars = True
     max_permitted_size = 150*150*3
-    use_matrix = False
-    merge_features = True
+    use_matrix = True
+    merge_features = False
     number_frames = {}
     view_validation = False
     win_thr = 0.3
-    visualize_votation = False
+    visualize_votation = True
 
     
     for cam in cameras:
@@ -295,7 +294,8 @@ if __name__ == "__main__":
         cam_pickles = OrderedDict()
         for c in cameras:
             cam_pickles[c] = os.path.join(out_path, f"{c}.pkl")
-        # cam_pickles = pickle.load(open(ppath, "rb"))
+            # cam_pickles = pickle.load(open(ppath, "rb"))
+            
         if(show_cars):
             # img_pickles = pickle.load(open(ipath, "rb"))
             img_pickles = OrderedDict()
@@ -316,7 +316,7 @@ if __name__ == "__main__":
     cam_merge = {}
 
     
-    for j in [10]:
+    for j in [13]:
         # print(cam_pickles)
         p1 = pickle.load(open(cam_pickles[j], "rb"))
         if(show_cars):
@@ -343,8 +343,8 @@ if __name__ == "__main__":
     
             if(not use_matrix):
                 translate_dict_p1,translate_dict_p2 = track_relation.relate_tracks(dists, p1, p2, win_thrs=win_thr)
-                for j in range(10,i):
-                    all_cam_dict[j] = reid_from_dict(translate_dict_p1,all_cam_dict[j])
+                for b in range(10,i):
+                    all_cam_dict[b] = reid_from_dict(translate_dict_p1,all_cam_dict[b])
                 all_cam_dict[i] = reid_from_dict(translate_dict_p2,all_cam_dict[i]) 
                 
                 id_p1 = arrange_dict_by_id(translate_dict_p1, p1)
@@ -353,8 +353,8 @@ if __name__ == "__main__":
                 mat_relations = track_relation.generate_global_dict(mat_relations, cameras, 
                                                      j, i, p1, p2, dists,
                                                      win_thrs=win_thr)
-                # for j in range(10,i):
-                #     all_cam_dict[j] = reid_from_matrix(mat_relations,all_cam_dict[j])
+                # for b in range(10,i):
+                #     all_cam_dict[b] = reid_from_matrix(mat_relations,all_cam_dict[b])
                 # all_cam_dict[i] = reid_from_dict(translate_dict_p2,all_cam_dict[i]) 
                 print(mat_relations)    
             # generate_mat(mat_relations, cameras, j, i, 
@@ -376,6 +376,7 @@ if __name__ == "__main__":
                 pressed = False
                 if(show_cars):
                     cv2.setMouseCallback("res", display.show_pair_imgs, (c1, c2))
+                print(img_pickles[j], img_pickles[i], j, i, len(c1), len(c2))
                 while not pressed:
                     # rshow = display.obtain_img(res, display.sel_x, display.sel_y)
                     cv2.imshow("res", res)
@@ -386,6 +387,7 @@ if __name__ == "__main__":
                         img2 = c2[x]
                     except:
                         pass
+                    
                     if(x > -1 and y > -1):        
                         cv2.imshow("car1", img1)
                         cv2.imshow("car2", img2)
@@ -396,7 +398,6 @@ if __name__ == "__main__":
                         print("press 'c' to continue")
                         print("key:", k)
                     if(k == 99):
-                        i+=1
                         pressed = True
         tracking_metrics = mot_metrics()            
         
